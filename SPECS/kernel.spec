@@ -10,10 +10,10 @@ Summary: The Linux kernel
 %global released_kernel 1
 
 %define rpmversion 3.10.0
-%define pkgrelease 229.4.2.el7
+%define pkgrelease 229.7.2.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 229.4.2%{?dist}
+%define specrelease 229.7.2%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -332,16 +332,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -370,9 +370,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -525,11 +522,11 @@ This package provides debug information for package kernel-tools.
 %endif # with_tools
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -670,12 +667,6 @@ cd linux-%{KVRA}
 
 # Drop some necessary files from the source dir into the buildroot
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
-
-# CentOS Branding Modification
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
-# End of CentOS Modification
 
 ApplyOptionalPatch linux-kernel-test.patch
 
@@ -828,7 +819,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1500,11 +1491,43 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Tue May 12 2015 Johnny Hughes <johnny@centos.org> [3.10.0-229.4.2.el7]
-- Apply debranding changes
+* Fri May 15 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.7.2.el7]
+- [fs] pipe: fix pipe corruption and iovec overrun on partial copy (Seth Jennings) [1202861 1198843] {CVE-2015-1805}
 
-* Fri Apr 24 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.4.2.el7]
+* Fri May 15 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.7.1.el7]
+- [scsi] storvsc: get rid of overly verbose warning messages (Vitaly Kuznetsov) [1215770 1206437]
+- [scsi] storvsc: force discovery of LUNs that may have been removed (Vitaly Kuznetsov) [1215770 1206437]
+- [scsi] storvsc: in responce to a scan event, scan the host (Vitaly Kuznetsov) [1215770 1206437]
+- [scsi] storvsc: NULL pointer dereference fix (Vitaly Kuznetsov) [1215770 1206437]
+- [virtio] defer config changed notifications (David Gibson) [1220278 1196009]
+- [virtio] unify config_changed handling (David Gibson) [1220278 1196009]
+- [x86] kernel: Remove a bogus 'ret_from_fork' optimization (Mateusz Guzik) [1209234 1209235] {CVE-2015-2830}
+- [kernel] futex: Mention key referencing differences between shared and private futexes (Larry Woodman) [1219169 1205862]
+- [kernel] futex: Ensure get_futex_key_refs() always implies a barrier (Larry Woodman) [1219169 1205862]
+- [scsi] megaraid_sas: revert: Add release date and update driver version (Tomas Henzl) [1216213 1207175]
+- [kernel] module: set nx before marking module MODULE_STATE_COMING (Hendrik Brueckner) [1214788 1196977]
+- [kernel] module: Clean up ro/nx after early module load failures (Pratyush Anand) [1214403 1202866]
+- [drm] radeon: fix kernel segfault in hwmonitor (Jerome Glisse) [1213467 1187817]
+- [fs] btrfs: make xattr replace operations atomic (Eric Sandeen) [1205086 1205873]
+- [x86] mm: Linux stack ASLR implementation (Jacob Tanenbaum) [1195684 1195685] {CVE-2015-1593}
+- [net] netfilter: nf_tables: fix flush ruleset chain dependencies (Jiri Pirko) [1192880 1192881] {CVE-2015-1573}
+- [fs] isofs: Fix unchecked printing of ER records (Mateusz Guzik) [1180482 1180483] {CVE-2014-9584}
+- [security] keys: memory corruption or panic during key garbage collection (Jacob Tanenbaum) [1179851 1179852] {CVE-2014-9529}
+- [fs] isofs: infinite loop in CE record entries (Jacob Tanenbaum) [1175246 1175248] {CVE-2014-9420}
+
+* Fri May 01 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.6.1.el7]
+- [net] tcp: abort orphan sockets stalling on zero window probes (Florian Westphal) [1215924 1151756]
 - [x86] crypto: aesni - fix memory usage in GCM decryption (Kurt Stutsman) [1213331 1212178] {CVE-2015-3331}
+
+* Wed Apr 22 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.5.1.el7]
+- [powerpc] mm: thp: Add tracepoints to track hugepage invalidate (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: Use read barrier when creating real_pte (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: thp: Use ACCESS_ONCE when loading pmdp (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: thp: Invalidate with vpn in loop (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: thp: Handle combo pages in invalidate (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: thp: Invalidate old 64K based hash page mapping before insert of 4k pte (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: thp: Don't recompute vsid and ssize in loop on invalidate (Gustavo Duarte) [1212977 1199016]
+- [powerpc] mm: thp: Add write barrier after updating the valid bit (Gustavo Duarte) [1212977 1199016]
 
 * Tue Apr 14 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.4.1.el7]
 - [crypto] x86: sha256_ssse3 - also test for BMI2 (Herbert Xu) [1211484 1201563]
