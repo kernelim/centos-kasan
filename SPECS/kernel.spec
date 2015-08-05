@@ -10,10 +10,10 @@ Summary: The Linux kernel
 %global released_kernel 1
 
 %define rpmversion 3.10.0
-%define pkgrelease 229.7.2.el7
+%define pkgrelease 229.11.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 229.7.2%{?dist}
+%define specrelease 229.11.1%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -238,7 +238,12 @@ Summary: The Linux kernel
 # scripts use them.
 #
 %define kernel_prereq  fileutils, module-init-tools >= 3.16-2, initscripts >= 8.11.1-1, grubby >= 8.28-2
-%define initrd_prereq  dracut >= 001-7
+
+%ifarch ppc64le
+%define initrd_prereq  dracut >= 033-241.ael7b_1.5
+%else
+%define initrd_prereq  dracut >= 033-241.el7_1.5
+%endif
 
 #
 # This macro does requires, provides, conflicts, obsoletes for a kernel package.
@@ -332,16 +337,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -370,9 +375,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -525,11 +527,11 @@ This package provides debug information for package kernel-tools.
 %endif # with_tools
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -670,12 +672,6 @@ cd linux-%{KVRA}
 
 # Drop some necessary files from the source dir into the buildroot
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
-
-# CentOS Branding Modification
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
-# End of CentOS Modification
 
 ApplyOptionalPatch linux-kernel-test.patch
 
@@ -828,7 +824,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1500,10 +1496,48 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Tue Jun 23 2015 Johnny Hughes <johnny@centos.org> [3.10.0-229.7.2.el7]
-- Apply debranding changes
+* Wed Jul 22 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.11.1.el7]
+- [fs] Fixing lease renewal (Steve Dickson) [1226328 1205048]
+- [fs] revert "nfs: Fixing lease renewal" (Carlos Maiolino) [1226328 1205048]
+- [redhat] spec: Update dracut dependency to 033-241.[el7|ael7b]_1.5 (Phillip Lougher) [1241571 1241344]
 
-* Fri May 15 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.7.2.el7]
+* Wed Jul 15 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.10.1.el7]
+- [redhat] spec: Update dracut dependency to pull in drbg module (Phillip Lougher) [1241571 1241344]
+
+* Sat Jul 04 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.9.1.el7]
+- [crypto] krng: Remove krng (Herbert Xu) [1238210 1229738]
+- [crypto] drbg: Add stdrng alias and increase priority (Herbert Xu) [1238210 1229738]
+- [crypto] seqiv: Move IV seeding into init function (Herbert Xu) [1238210 1229738]
+- [crypto] eseqiv: Move IV seeding into init function (Herbert Xu) [1238210 1229738]
+- [crypto] chainiv: Move IV seeding into init function (Herbert Xu) [1238210 1229738]
+- [s390] crypto: ghash - Fix incorrect ghash icv buffer handling (Herbert Xu) [1238211 1207598]
+- [kernel] module: Call module notifier on failure after complete_formation() (Bandan Das) [1238937 1236273]
+- [net] ipv4: kABI fix for 0bbf87d backport (Aristeu Rozanski) [1238208 1184764]
+- [net] ipv4: Convert ipv4.ip_local_port_range to be per netns (Aristeu Rozanski) [1238208 1184764]
+- [of] Eliminate of_allnodes list (Gustavo Duarte) [1236983 1210533]
+- [scsi] ipr: Increase default adapter init stage change timeout (Steve Best) [1236139 1229217]
+- [fs] libceph: fix double __remove_osd() problem (Sage Weil) [1236462 1229488]
+- [fs] ext4: fix data corruption caused by unwritten and delayed extents (Lukas Czerner) [1235563 1213487]
+- [kernel] watchdog: update watchdog_thresh properly (Ulrich Obergfell) [1223924 1216074]
+- [kernel] watchdog: update watchdog attributes atomically (Ulrich Obergfell) [1223924 1216074]
+- [virt] kvm: ensure hard lockup detection is disabled by default (Andrew Jones) [1236461 1111262]
+- [watchdog] control hard lockup detection default (Andrew Jones) [1236461 1111262]
+- [watchdog] Fix print-once on enable (Andrew Jones) [1236461 1111262]
+
+* Fri Jun 19 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.8.1.el7]
+- [fs] fs-cache: The retrieval remaining-pages counter needs to be atomic_t (David Howells) [1231809 1130457]
+- [net] libceph: tcp_nodelay support (Sage Weil) [1231803 1197952]
+- [powerpc] pseries: Simplify check for suspendability during suspend/migration (Gustavo Duarte) [1231638 1207295]
+- [powerpc] pseries: Introduce api_version to migration sysfs interface (Gustavo Duarte) [1231638 1207295]
+- [powerpc] pseries: Little endian fixes for post mobility device tree update (Gustavo Duarte) [1231638 1207295]
+- [fs] sunrpc: Add missing support for RPC_CLNT_CREATE_NO_RETRANS_TIMEOUT (Steve Dickson) [1227825 1111712]
+- [fs] nfs: Fixing lease renewal (Benjamin Coddington) [1226328 1205048]
+- [powerpc] iommu: ddw: Fix endianness (Steve Best) [1224406 1189040]
+- [usb] fix use-after-free bug in usb_hcd_unlink_urb() (Don Zickus) [1223239 1187256]
+- [net] ipv4: Missing sk_nulls_node_init() in ping_unhash() (Denys Vlasenko) [1218104 1218105] {CVE-2015-3636}
+- [net] nf_conntrack: reserve two bytes for nf_ct_ext->len (Marcelo Leitner) [1211096 1206164] {CVE-2014-9715}
+- [net] ipv6: Don't reduce hop limit for an interface (Denys Vlasenko) [1208494 1208496] {CVE-2015-2922}
+- [x86] kernel: execution in the early microcode loader (Jacob Tanenbaum) [1206829 1206830] {CVE-2015-2666}
 - [fs] pipe: fix pipe corruption and iovec overrun on partial copy (Seth Jennings) [1202861 1198843] {CVE-2015-1805}
 
 * Fri May 15 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.7.1.el7]
