@@ -10,10 +10,10 @@ Summary: The Linux kernel
 %global released_kernel 1
 
 %define rpmversion 3.10.0
-%define pkgrelease 229.11.1.el7
+%define pkgrelease 229.14.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 229.11.1%{?dist}
+%define specrelease 229.14.1%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -337,16 +337,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -375,9 +375,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -530,11 +527,11 @@ This package provides debug information for package kernel-tools.
 %endif # with_tools
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -677,9 +674,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -830,7 +824,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1502,8 +1496,29 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Wed Aug 05 2015 CentOS Sources <bugs@centos.org> - 3.10.0-229.11.1.el7.centos
-- Apply debranding changes
+* Tue Aug 25 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.14.1.el7]
+- [s390] zcrypt: Fixed reset and interrupt handling of AP queues (Hendrik Brueckner) [1248381 1238230]
+
+* Tue Aug 11 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.13.1.el7]
+- [dma] ioat: fix tasklet tear down (Herton R. Krzesinski) [1251523 1210093]
+- [drm] radeon: Fix VGA switcheroo problem related to hotplug (missing hunk) (Rob Clark) [1207879 1223472]
+- [security] keys: Ensure we free the assoc array edit if edit is valid (David Howells) [1246039 1244171] {CVE-2015-1333}
+- [net] tcp: properly handle stretch acks in slow start (Florian Westphal) [1243903 1151756]
+- [net] tcp: fix no cwnd growth after timeout (Florian Westphal) [1243903 1151756]
+- [net] tcp: increase throughput when reordering is high (Florian Westphal) [1243903 1151756]
+- [of] Fix sysfs_dirent cache integrity issue (Gustavo Duarte) [1249120 1225539]
+- [tty] vt: don't set font mappings on vc not supporting this (Jarod Wilson) [1248384 1213538]
+- [scsi] fix regression in scsi_send_eh_cmnd() (Ewan Milne) [1243412 1167454]
+- [net] udp: fix behavior of wrong checksums (Denys Vlasenko) [1240760 1240761] {CVE-2015-5364 CVE-2015-5366}
+- [fs] Convert MessageID in smb2_hdr to LE (Sachin Prabhu) [1238693 1161441]
+- [x86] bpf_jit: fix compilation of large bpf programs (Denys Vlasenko) [1236938 1236939] {CVE-2015-4700}
+- [net] sctp: fix ASCONF list handling (Marcelo Leitner) [1227960 1206474] {CVE-2015-3212}
+- [fs] ext4: allocate entire range in zero range (Lukas Czerner) [1193909 1187071] {CVE-2015-0275}
+- [x86] ASLR bruteforce possible for vdso library (Jacob Tanenbaum) [1184898 1184899] {CVE-2014-9585}
+
+* Thu Jul 23 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.12.1.el7]
+- [ethernet] ixgbe: remove CIAA/D register reads from bad VF check (John Greene) [1245597 1205903]
+- [kernel] sched: Avoid throttle_cfs_rq() racing with period_timer stopping (Rik van Riel) [1241078 1236413]
 
 * Wed Jul 22 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.11.1.el7]
 - [fs] Fixing lease renewal (Steve Dickson) [1226328 1205048]
