@@ -10,10 +10,14 @@ Summary: The Linux kernel
 %global released_kernel 1
 
 %define rpmversion 3.10.0
-%define pkgrelease 229.14.1.el7
+%define pkgrelease 229.20.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 229.14.1%{?dist}
+%if "%{?dist}" == ".ael7b"
+%define specrelease 229.20.1%{?dist}
+%else
+%define specrelease 229.20.1.el7
+%endif
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -337,16 +341,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -375,9 +379,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -530,11 +531,11 @@ This package provides debug information for package kernel-tools.
 %endif # with_tools
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -677,9 +678,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -830,7 +828,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1502,8 +1500,71 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Tue Sep 15 2015 CentOS Sources <bugs@centos.org> - 3.10.0-229.14.1.el7.centos
-- Apply debranding changes
+* Thu Sep 24 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.20.1.el7]
+- Revert: [crypto] nx - Check for bogus firmware properties (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Moving NX-AES-CBC to be processed logic (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Moving NX-AES-CCM to be processed logic and sg_list bounds (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Moving limit and bound logic in CTR and fix IV vector (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Moving NX-AES-ECB to be processed logic (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Moving NX-AES-GCM to be processed logic (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Moving NX-AES-XCBC to be processed logic (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Fix SHA concurrence issue and sg limit bounds (Phillip Lougher) [1247127 1190103]
+- Revert: [crypto] nx - Fixing the limit number of bytes to be processed (Phillip Lougher) [1247127 1190103]
+
+* Tue Sep 22 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.19.1.el7]
+- Revert: [fs] xfs: DIO write completion size updates race (Phillip Lougher) [1258942 1213370]
+- Revert: [fs] xfs: direct IO EOF zeroing needs to drain AIO (Phillip Lougher) [1258942 1213370]
+
+* Fri Sep 18 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.18.1.el7]
+- [scsi] sd: split sd_init_command (Ewan Milne) [1264141 1109348]
+- [scsi] sd: retry discard commands (Ewan Milne) [1264141 1109348]
+- [scsi] sd: retry write same commands (Ewan Milne) [1264141 1109348]
+- [scsi] sd: don't use scsi_setup_blk_pc_cmnd for discard requests (Ewan Milne) [1264141 1109348]
+- [scsi] sd: don't use scsi_setup_blk_pc_cmnd for write same requests (Ewan Milne) [1264141 1109348]
+- [scsi] sd: don't use scsi_setup_blk_pc_cmnd for flush requests (Ewan Milne) [1264141 1109348]
+- [scsi] set sc_data_direction in common code (Ewan Milne) [1264141 1109348]
+- [scsi] restructure command initialization for TYPE_FS requests (Ewan Milne) [1264141 1109348]
+- [scsi] move the nr_phys_segments assert into scsi_init_io (Ewan Milne) [1264141 1109348]
+- [fs] xfs: remove bitfield based superblock updates (Brian Foster) [1261781 1225075]
+- [netdrv] ixgbe: fix X540 Completion timeout (John Greene) [1257633 1173786]
+- [lib] radix-tree: handle allocation failure in radix_tree_insert() (Seth Jennings) [1264142 1260613]
+- [crypto] nx - Fixing the limit number of bytes to be processed (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Fix SHA concurrence issue and sg limit bounds (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Moving NX-AES-XCBC to be processed logic (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Moving NX-AES-GCM to be processed logic (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Moving NX-AES-ECB to be processed logic (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Moving limit and bound logic in CTR and fix IV vector (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Moving NX-AES-CCM to be processed logic and sg_list bounds (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Moving NX-AES-CBC to be processed logic (Herbert Xu) [1247127 1190103]
+- [crypto] nx - Check for bogus firmware properties (Herbert Xu) [1247127 1190103]
+- [md] raid1: extend spinlock to protect raid1_end_read_request against inconsistencies (Jes Sorensen) [1263416 1255758]
+- [md] raid1: fix test for 'was read error from last working device' (Jes Sorensen) [1263416 1255758]
+- [fs] xfs: direct IO EOF zeroing needs to drain AIO (Brian Foster) [1258942 1213370]
+- [fs] xfs: DIO write completion size updates race (Brian Foster) [1258942 1213370]
+- [fs] pnfs: Fix a memory leak when attempted pnfs fails (Steve Dickson) [1256640 1234986]
+
+* Thu Sep 17 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.17.1.el7]
+- [hv] vmbus: Cleanup vmbus_establish_gpadl() (Vitaly Kuznetsov) [1262096 1211914]
+- [scsi] iscsi: let session recovery_tmo sysfs writes persist across recovery (Chris Leech) [1261879 1139038]
+- [scsi] ipr: Fix invalid array indexing for HRRQ (Gustavo Duarte) [1260625 1251184]
+- [scsi] ipr: Fix incorrect trace indexing (Gustavo Duarte) [1260625 1251184]
+- [net] netfilter: synproxy: fix sending window update to client (Phil Sutter) [1257289 1257290 1251031 1242094]
+- [net] netfilter: ip6t_synproxy: fix NULL pointer dereference (Phil Sutter) [1257289 1257290 1251031 1242094]
+- [fs] nfsv4: Always drain the slot table before re-establishing the lease (Benjamin Coddington) [1256649 1240790]
+- [fs] Recover from stateid-type error on SETATTR (Benjamin Coddington) [1256639 1214410]
+- [netdrv] virtio-net: drop NETIF_F_FRAGLIST (Jason Wang) [1247839 1247840] {CVE-2015-5156}
+- [x86] mm: add memory tracking to native_pmdp_get_and_clear (David Bulkow) [1263525 1227357]
+- [fs] dcache: d_walk() might skip too much (Denys Vlasenko) [1173812 1173813] {CVE-2014-8559}
+- [fs] dcache: deal with deadlock in d_walk() (Denys Vlasenko) [1173812 1173813] {CVE-2014-8559}
+- [fs] dcache: move d_rcu from overlapping d_child to overlapping d_alias (Denys Vlasenko) [1173812 1173813] {CVE-2014-8559}
+- [fs] dcache: fold try_to_ascend() into the sole remaining caller (Denys Vlasenko) [1173812 1173813] {CVE-2014-8559}
+
+* Wed Sep 02 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.16.1.el7]
+- [virt] kvm: x86: reset RVI upon system reset (Marcelo Tosatti) [1225087 1209995]
+
+* Wed Aug 26 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.15.1.el7]
+- [cpufreq] intel_pstate: Fix overflow in busy_scaled due to long delay (Prarit Bhargava) [1255496 1228346]
+- [netdrv] be2net: avoid vxlan offloading on multichannel configs (Ivan Vecera) [1256609 1232327]
 
 * Tue Aug 25 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.14.1.el7]
 - [s390] zcrypt: Fixed reset and interrupt handling of AP queues (Hendrik Brueckner) [1248381 1238230]
