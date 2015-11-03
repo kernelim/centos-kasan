@@ -341,16 +341,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: securebootca.cer
+Source13: centos.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: redhatsecurebootca2.cer
-Source14: redhatsecureboot003.cer
+Source13: centos.cer
+Source14: secureboot.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: rheldup3.x509
-Source16: rhelkpatch1.x509
+Source15: centos-ldup.x509
+Source16: centos-kpatch.x509
 
 Source18: check-kabi
 
@@ -379,6 +379,9 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
+Patch1000: debrand-single-cpu.patch
+Patch1001: debrand-rh_taint.patch
+Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -531,11 +534,11 @@ This package provides debug information for package kernel-tools.
 %endif # with_tools
 
 %package -n kernel-abi-whitelists
-Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
+Summary: The CentOS Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the Red Hat Enterprise
+The kABI package contains information pertaining to the CentOS
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -678,6 +681,9 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
+ApplyOptionalPatch debrand-single-cpu.patch
+ApplyOptionalPatch debrand-rh_taint.patch
+ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -828,7 +834,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1500,6 +1506,9 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
+* Tue Nov 03 2015 CentOS Sources <bugs@centos.org> - 3.10.0-229.20.1.el7
+- Apply debranding changes
+
 * Thu Sep 24 2015 Phillip Lougher <plougher@redhat.com> [3.10.0-229.20.1.el7]
 - Revert: [crypto] nx - Check for bogus firmware properties (Phillip Lougher) [1247127 1190103]
 - Revert: [crypto] nx - Moving NX-AES-CBC to be processed logic (Phillip Lougher) [1247127 1190103]
