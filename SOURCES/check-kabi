@@ -102,10 +102,12 @@ def check_kabi(symvers,kabi):
 			print symbol
 		print ""
 
-	if fail:
+	"""Halt the build, if we got errors and/or warnings. In either case,
+	   double-checkig is required to avoid introducing / concealing
+	   KABI inconsistencies."""
+	if fail or warn:
 		sys.exit(1)
-	else:
-		sys.exit(0)
+	sys.exit(0)
 
 def usage():
 	print """
