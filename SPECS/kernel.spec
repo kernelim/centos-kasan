@@ -12,12 +12,9 @@ Summary: The Linux kernel
 %global distro_build 327
 
 %define rpmversion 3.10.0
-%define pkgrelease 327.el7
+%define pkgrelease 327.3.1.el7
 
-# allow pkg_release to have configurable %{?dist} tag
-%define specrelease 327%{?dist}
-
-%define pkg_release %{specrelease}%{?buildid}
+%define pkg_release %{pkgrelease}%{?buildid}
 
 # The kernel tarball/base version
 %define rheltarball %{rpmversion}-%{pkgrelease}
@@ -342,16 +339,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -380,9 +377,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -544,11 +538,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -691,9 +685,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -852,7 +843,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1539,8 +1530,44 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Thu Nov 19 2015 CentOS Sources <bugs@centos.org> - 3.10.0-327.el7.centos
-- Apply debranding changes
+* Fri Nov 20 2015 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.3.1.el7]
+- rebuild
+
+* Fri Nov 13 2015 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.2.1.el7]
+- [netdrv] macvtap: unbreak receiving of gro skb with frag list (Jason Wang) [1279794 1273737]
+- [net] ipv6: drop frames with attached skb->sk in forwarding (Hannes Frederic Sowa) [1281701 1243966]
+- [net] ipv6: ip6_forward: perform skb->pkt_type check at the beginning (Hannes Frederic Sowa) [1281701 1243966]
+- [net] sctp: Fix race between OOTB responce and route removal (Jamie Bainbridge) [1281426 1277309]
+- [x86] mm: fix VM_FAULT_RETRY handling (Andrea Arcangeli) [1281427 1277226]
+- [x86] mm: consolidate VM_FAULT_RETRY handling (Andrea Arcangeli) [1281427 1277226]
+- [x86] mm: move mmap_sem unlock from mm_fault_error() to caller (Andrea Arcangeli) [1281427 1277226]
+- [mm] let mm_find_pmd fix buggy race with THP fault (Larry Woodman) [1281424 1273993]
+- [mm] ksm: unstable_tree_search_insert error checking cleanup (Andrea Arcangeli) [1281422 1274871]
+- [mm] ksm: use find_mergeable_vma in try_to_merge_with_ksm_page (Andrea Arcangeli) [1281422 1274871]
+- [mm] ksm: use the helper method to do the hlist_empty check (Andrea Arcangeli) [1281422 1274871]
+- [mm] ksm: don't fail stable tree lookups if walking over stale stable_nodes (Andrea Arcangeli) [1281422 1274871]
+- [mm] ksm: add cond_resched() to the rmap_walks (Andrea Arcangeli) [1281422 1274871]
+- [powerpc] kvm: book3s_hv: Synthesize segment fault if SLB lookup fails (Thomas Huth) [1281423 1269467]
+- [powerpc] kvm: book3s_hv: Create debugfs file for each guest's HPT (David Gibson) [1281420 1273692]
+- [powerpc] kvm: book3s_hv: Add helpers for lock/unlock hpte (David Gibson) [1281420 1273692]
+- [powerpc] pci: initialize hybrid_dma_data before use (Laurent Vivier) [1279793 1270717]
+- [md] raid10: don't clear bitmap bit when bad-block-list write fails (Jes Sorensen) [1279796 1267652]
+- [md] raid1: don't clear bitmap bit when bad-block-list write fails (Jes Sorensen) [1279796 1267652]
+- [md] raid10: submit_bio_wait() returns 0 on success (Jes Sorensen) [1279796 1267652]
+- [md] raid1: submit_bio_wait() returns 0 on success (Jes Sorensen) [1279796 1267652]
+- [md] crash in md-raid1 and md-raid10 due to incorrect list manipulation (Jes Sorensen) [1279796 1267652]
+- [md] raid10: ensure device failure recorded before write request returns (Jes Sorensen) [1279796 1267652]
+- [md] raid1: ensure device failure recorded before write request returns (Jes Sorensen) [1279796 1267652]
+- [block] nvme: Fix memory leak on retried commands (David Milburn) [1279792 1271860]
+- [cpufreq] intel_pstate: fix rounding error in max_freq_pct (Prarit Bhargava) [1281491 1263866]
+- [cpufreq] intel_pstate: fix PCT_TO_HWP macro (Prarit Bhargava) [1273926 1264990]
+- [cpufreq] revert "intel_pstate: add quirk to disable HWP on Skylake-S processors" (Prarit Bhargava) [1273926 1264990]
+- [cpufreq] revert "intel_pstate: disable Skylake processors" (Prarit Bhargava) [1273926 1264990]
+- [x86] kvm: svm: unconditionally intercept #DB (Paolo Bonzini) [1279469 1279470] {CVE-2015-8104}
+- [x86] virt: guest to host DoS by triggering an infinite loop in microcode (Paolo Bonzini) [1277560 1277561] {CVE-2015-5307}
+
+* Tue Nov 03 2015 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.1.1.el7]
+- [x86] kvm: mmu: fix validation of mmio page fault (Bandan Das) [1275150 1267128]
 
 * Thu Oct 29 2015 Rafael Aquini <aquini@redhat.com> [3.10.0-327.el7]
 - [mm] free compound page with correct order (Andrea Arcangeli) [1274867]
