@@ -12,7 +12,7 @@ Summary: The Linux kernel
 %global distro_build 327
 
 %define rpmversion 3.10.0
-%define pkgrelease 327.10.1.el7
+%define pkgrelease 327.13.1.el7
 
 %define pkg_release %{pkgrelease}%{?buildid}
 
@@ -339,16 +339,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -377,9 +377,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -541,11 +538,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -688,9 +685,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -849,7 +843,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1536,8 +1530,37 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Tue Feb 16 2016 CentOS Sources <bugs@centos.org> - 3.10.0-327.10.1.el7
-- Apply debranding changes
+* Mon Feb 29 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.13.1.el7]
+- [net] veth: don't modify ip_summed; doing so treats packets with bad checksums as good (Sabrina Dubroca) [1312430 1307099]
+
+* Tue Feb 23 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.12.1.el7]
+- [md] dm-thin-metadata: fix bug in dm_thin_remove_range() (Mike Snitzer) [1310531 1284833]
+- [md] dm-thin: fix regression in advertised discard limits (Mike Snitzer) [1310531 1284833]
+- [scsi] hpsa: Update driver revision to RH2 (Joseph Szczypek) [1308923 1268073]
+- [scsi] hpsa: fix issues with multilun devices (Joseph Szczypek) [1308923 1268073]
+- [net] tcp: honour SO_BINDTODEVICE for TW_RST case too (Florian Westphal) [1308917 1295557]
+- [net] tcp: send_reset: test for non-NULL sk first (Florian Westphal) [1308917 1295557]
+- [net] add inet_sk_transparent() helper (Florian Westphal) [1308917 1295557]
+- [net] add sk_fullsock() helper (Florian Westphal) [1308917 1295557]
+- [net] ipv6: Fix regression in udp_v6_mcast_next() (Hannes Frederic Sowa) [1308921 1298790]
+- [netdrv] mlx4_en: Remove BUG_ON assert when checking if ring is full (Kamal Heib) [1310132 1258136]
+- [netdrv] cxgb4: changes for new firmware 1.14.4.0 (Sai Vemuri) [1309541 1275825]
+- [netdrv] iwlwifi: pci: add a few more PCI subvendor IDs for the 7265 series (Stanislaw Gruszka) [1304336 1287564]
+- [netdrv] iwlwifi: edit the 3165 series and 8000 series PCI IDs (Stanislaw Gruszka) [1301885 1279780]
+- [netdrv] iwlwifi: Add new PCI IDs for the 8260 series (Stanislaw Gruszka) [1301885 1279780]
+- [mm] memcg: oom_notify use-after-free fix (Rafael Aquini) [1298212 1294114]
+- [powerpc] kvm: Increase memslots to 512 (Thomas Huth) [1297758 1276254]
+- [powerpc] kvm: Implement extension to report number of memslots (Thomas Huth) [1297758 1276254]
+
+* Thu Jan 28 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.11.1.el7]
+- [fs] namespaces: Use task_lock and not rcu to protect nsproxy (Hannes Frederic Sowa) [1300618 1297032]
+- [fs] proc_namespace: simplify testing nsp and nsp->mnt_ns (Hannes Frederic Sowa) [1300618 1297032]
+- [net] possible use after free in dst_release (Hannes Frederic Sowa) [1300610 1296299]
+- [net] fix a race in dst_release() (Hannes Frederic Sowa) [1300610 1296299]
+- [net] ratelimit warnings about dst entry refcount underflow or overflow (Hannes Frederic Sowa) [1300610 1296299]
+- [net] fix IP early demux races (Hannes Frederic Sowa) [1300610 1296299]
+- [usb] xhci: init command timeout timer earlier to avoid deleting it uninitialized (Don Zickus) [1300605 1290202]
+- [scsi] be2iscsi: Fix updating the next pointer during WRB posting (Maurizio Lombardi) [1298981 1229330]
 
 * Sat Jan 23 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.10.1.el7]
 - [of] return NUMA_NO_NODE from fallback of_node_to_nid() (Thadeu Lima de Souza Cascardo) [1300614 1294398]
