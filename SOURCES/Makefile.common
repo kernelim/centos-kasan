@@ -9,7 +9,7 @@ RPMVERSION:=3.10.0
 # marker is git tag which we base off of for exporting patches
 MARKER:=v3.10
 PREBUILD:=
-BUILD:=327.18.2
+BUILD:=327.22.2
 DIST:=.el7
 SPECFILE:=kernel.spec
 RPM:=$(REDHAT)/rpm

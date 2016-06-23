@@ -12,7 +12,7 @@ Summary: The Linux kernel
 %global distro_build 327
 
 %define rpmversion 3.10.0
-%define pkgrelease 327.18.2.el7
+%define pkgrelease 327.22.2.el7
 
 %define pkg_release %{pkgrelease}%{?buildid}
 
@@ -339,16 +339,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -377,9 +377,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -541,11 +538,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -688,9 +685,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -849,7 +843,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1536,11 +1530,68 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Thu May 12 2016 CentOS Sources <bugs@centos.org> - 3.10.0-327.18.2.el7
-- Apply debranding changes
+* Thu Jun 09 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.22.2.el7]
+- [infiniband] security: Restrict use of the write() interface (Don Dutile) [1332553 1316685] {CVE-2016-4565}
 
-* Fri Apr 08 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.18.2.el7]
+* Mon May 16 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.22.1.el7]
+- [mm] mmu_notifier: fix memory corruption (Jerome Glisse) [1335727 1307042]
+- [misc] cxl: Increase timeout for detection of AFU mmio hang (Steve Best) [1335419 1329682]
+- [misc] cxl: Configure the PSL for two CAPI ports on POWER8NVL (Steve Best) [1336389 1278793]
+- [powerpc] Define PVR value for POWER8NVL processor (Steve Best) [1336389 1278793]
+- [x86] Mark Intel Knights Landing-F processor as not supported (Steve Best) [1335407 1331516]
+- [netdrv] ixgbevf: fix spoofed packets with random MAC (Ken Cox) [1335406 1247345]
+- [netdrv] ixgbevf: use ether_addr_copy instead of memcpy (Ken Cox) [1335406 1247345]
+- [scsi] hpsa: update rev to 3.4.10-0-RH3 (Joseph Szczypek) [1334773 1296287]
+- [scsi] hpsa: check for a null phys_disk pointer in ioaccel2 path (Joseph Szczypek) [1334773 1296287]
+- [cpufreq] intel_pstate: Fix divide by zero on Knights Landing (Steve Best) [1334438 1273305]
+- [mm] hugetlbfs: optimize when NUMA=n (Rui Wang) [1334436 1274624]
+- [mm] hugetlb: use memory policy when available (Rui Wang) [1334436 1274624]
+- [mm] optimize put_mems_allowed() usage (Rui Wang) [1334436 1274624]
+- [x86] Mark Intel Knights Landing processor as supported (Steve Best) [1332991 1158238]
+- [block] virtio-blk: use VIRTIO_BLK_F_WCE and VIRTIO_BLK_F_CONFIG_WCE in virtio1 (Fam Zheng) [1327611 1266008]
+- [x86] mm: suitable memory should go to ZONE_MOVABLE (Igor Mammedov) [1327588 1265880]
+- [mm] memory-hotplug: add zone_for_memory() for selecting zone for new memory (Igor Mammedov) [1327588 1265880]
+- [s390] mm: Fix memory hotplug for unaligned standby memory (Igor Mammedov) [1327588 1265880]
+- [mm] memory-hotplug: Remove "weak" from memory_block_size_bytes() declaration (Igor Mammedov) [1327588 1265880]
+- [mm] Add prototype declaration to the header file (Igor Mammedov) [1327588 1265880]
+- [mm] hotplug: verify hotplug memory range (Igor Mammedov) [1327588 1265880]
+- [drm] vmwgfx: respect 'nomodeset' (Rob Clark) [1327587 1284936]
+- [net] sctp: Prevent soft lockup when sctp_accept() is called during a timeout event (Xin Long) [1324748 1270586] {CVE-2015-8767}
+- [net] sctp: Whitespace fix (Xin Long) [1324748 1270586] {CVE-2015-8767}
+- [fs] xfs: fix splice/direct-IO deadlock (Bill O'Donnell) [1324098 824796]
+- [fs] vfs: split generic splice code from i_mutex locking (Bill O'Donnell) [1324098 824796]
 - [lib] keys: Fix ASN.1 indefinite length object parsing (David Howells) [1308814 1308815] {CVE-2016-0758}
+
+* Sat May 07 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.21.1.el7]
+- [lib] klist: fix starting point removed bug in klist iterators (Ewan Milne) [1333403 1309433]
+- [acpi] tables: test the correct variable (Prarit Bhargava) [1331681 1242556]
+- [x86] acpi: Handle apic/x2apic entries in MADT in correct order (Prarit Bhargava) [1331681 1242556]
+- [acpi] tables: Add acpi_subtable_proc to ACPI table parsers (Prarit Bhargava) [1331681 1242556]
+- [acpi] table: Always count matched and successfully parsed entries (Prarit Bhargava) [1331681 1242556]
+- [acpi] table: Add new function to get table entries (Prarit Bhargava) [1331681 1242556]
+- [netdrv] mlx4_en: Fix IRQ affinity on s390x (Kamal Heib) [1327583 1264148]
+- [usb] xhci: Workaround to get Intel xHCI reset working more reliably (Torez Smith) [1327581 1318570]
+- [block] Return EBUSY from BLKRRPART for mounted whole-dev fs (Eric Sandeen) [1324530 1285549]
+- [powerpc] eeh: Fix PE location code (Gustavo Duarte) [1324528 1302537]
+- [powerpc] eeh: Wrong place to call pci_get_slot() (Steve Best) [1327834 1273996]
+- [net] ipv6: Nonlocal bind (Sabrina Dubroca) [1324502 1315968]
+- [net] ipv4: bind ip_nonlocal_bind to current netns (Sabrina Dubroca) [1324502 1315968]
+
+* Thu Apr 21 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.20.1.el7]
+- [kernel] audit: stop an old auditd being starved out by a new auditd (Richard Guy Briggs) [1328802 1253123]
+- [kernel] audit: try harder to send to auditd upon netlink failure (Richard Guy Briggs) [1328802 1253123]
+- [kernel] audit: remove stray newlines from audit_log_lost messages (Richard Guy Briggs) [1328802 1253123]
+- [kernel] audit: get rid of *NO* daemon at audit_pid=0 message (Richard Guy Briggs) [1328802 1253123]
+- [kernel] audit: prevent an older auditd shutdown from orphaning a newer auditd startup (Richard Guy Briggs) [1328802 1253123]
+- [net] netlink: don't hold mutex in rcu callback when releasing mmapd ring (Phil Sutter) [1328801 1238749]
+- [lib] rhashtable: Wait for RCU readers after final unzip work (Phil Sutter) [1328801 1238749]
+- [net] netlink: Lockless lookup with RCU grace period in socket release (Phil Sutter) [1328801 1238749]
+- [net] netlink: use jhash as hashfn for rhashtable (Phil Sutter) [1328801 1238749]
+
+* Tue Apr 12 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.19.1.el7]
+- [net] tcp, dccp: warn user for preferred ip_local_port_range (Florian Westphal) [1323960 1305525]
+- [net] tcp, dccp: try to not exhaust ip_local_port_range in connect() (Florian Westphal) [1323960 1305525]
+- [net] tcp: improve REUSEADDR/NOREUSEADDR cohabitation (Florian Westphal) [1323960 1305525]
 
 * Mon Apr 04 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.18.1.el7]
 - [scsi] bnx2fc: Fix FCP RSP residual parsing (Maurizio Lombardi) [1322279 1306342]
