@@ -12,7 +12,7 @@ Summary: The Linux kernel
 %global distro_build 327
 
 %define rpmversion 3.10.0
-%define pkgrelease 327.28.3.el7
+%define pkgrelease 327.36.1.el7
 
 %define pkg_release %{pkgrelease}%{?buildid}
 
@@ -339,16 +339,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -377,9 +377,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -541,11 +538,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -688,9 +685,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -849,7 +843,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1536,18 +1530,122 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Thu Aug 18 2016 CentOS Sources <bugs@centos.org> - 3.10.0-327.28.3.el7
-- Apply debranding changes
+* Wed Aug 17 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.36.1.el7]
+- [x86] Use pte_none() to test for empty PTE (Larry Woodman) [1363860 1347159]
+- [x86] Disallow running with 32-bit PTEs to work around erratum (Larry Woodman) [1363860 1347159]
+- [x86] Ignore A/D bits in pte/pmd/pud_none() (Alexander Gordeev) [1363860 1347159]
+- [x86] Move swap offset/type up in PTE to work around erratum (Alexander Gordeev) [1363860 1347159]
+- [x86] cpu/intel: Introduce macros for Intel family numbers (Steve Best) [1364074 1273778]
 
-* Fri Aug 12 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.28.3.el7]
+* Tue Aug 09 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.35.1.el7]
+- Revert: [x86] cpu/intel: Introduce macros for Intel family numbers (Steve Best) [1364074 1273778]
+- Revert: [x86] Move swap offset/type up in PTE to work around erratum (Larry Woodman) [1363860 1347159]
+- Revert: [x86] Ignore A/D bits in pte/pmd/pud_none() (Larry Woodman) [1363860 1347159]
+- Revert: [x86] Disallow running with 32-bit PTEs to work around erratum (Larry Woodman) [1363860 1347159]
+- Revert: [x86] Use pte_none() to test for empty PTE (Larry Woodman) [1363860 1347159]
+
+* Mon Aug 08 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.34.1.el7]
+- [x86] Use pte_none() to test for empty PTE (Larry Woodman) [1363860 1347159]
+- [x86] Disallow running with 32-bit PTEs to work around erratum (Larry Woodman) [1363860 1347159]
+- [x86] Ignore A/D bits in pte/pmd/pud_none() (Larry Woodman) [1363860 1347159]
+- [x86] Move swap offset/type up in PTE to work around erratum (Larry Woodman) [1363860 1347159]
+- [x86] cpu/intel: Introduce macros for Intel family numbers (Steve Best) [1364074 1273778]
+- [net] sctp: support ipv6 nonlocal bind (Xin Long) [1363847 1355769]
+- [fs] xfs: fix duplicate buffer flag bits (Brian Foster) [1363677 1358817]
+- [fs] sunrpc: Fix races between socket connection and destroy code (Steve Dickson) [1363617 1278540]
+- [fs] sunrpc: Add helpers to prevent socket create from racing (Steve Dickson) [1363617 1270038]
+- [acpi] battery: Accelerate battery resume callback (Jeremy McNicoll) [1363611 1270522]
+- [scsi] 3w-sas: fix command completion race (Tomas Henzl) [1362040 1294538]
+- [kernel] hrtimer: Prevent remote enqueue of leftmost timers (David Bulkow) [1361020 1323752]
+- [scsi] storvsc: Size the queue depth based on the ringbuffer size (Cathy Avery) [1360161 1287040]
+- [scsi] storvsc: Increase the ring buffer size (Cathy Avery) [1360161 1287040]
+- [scsi] vmbus: Support a vmbus API for efficiently sending page arrays (Cathy Avery) [1360161 1287040]
+- [fs] ovl: verify upper dentry in ovl_remove_and_whiteout() (Miklos Szeredi) [1364384 1359829]
+- [fs] ovl: verify upper dentry before unlink and rename (Miklos Szeredi) [1360155 1341795]
+- [fs] ovl: fix getcwd() failure after unsuccessful rmdir (Miklos Szeredi) [1360155 1341795]
+- [base] memory: fix kernel warning during memory hotplug on ppc64 (Laurent Vivier) [1357130 1276205]
+- [fs] sunrpc: increase UNX_MAXNODENAME from 32 to __NEW_UTS_LEN bytes (Benjamin Coddington) [1356880 1315390]
 - [net] tcp: enable per-socket rate limiting of all 'challenge acks' (Florian Westphal) [1355603 1355605] {CVE-2016-5696}
 - [net] tcp: uninline tcp_oow_rate_limited() (Florian Westphal) [1355603 1355605] {CVE-2016-5696}
 - [net] tcp: make challenge acks less predictable (Florian Westphal) [1355603 1355605] {CVE-2016-5696}
-
-* Mon Jun 27 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.28.2.el7]
+- [net] netfilter: x_tables: speed up jump target validation (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: don't reject valid target size on some architectures (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: enforce nul-terminated table name from getsockopt GET_ENTRIES (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: make sure e->next_offset covers remaining blob size (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: introduce and use xt_copy_counters_from_user (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: do compat validation via translate_table (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: xt_compat_match_from_user doesn't need a retval (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: arp_tables: simplify translate_compat_table args (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: ip6_tables: simplify translate_compat_table args (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: ip_tables: simplify translate_compat_table args (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: remove unused comefrom hookmask argument (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: validate all offsets and sizes in a rule (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: check for bogus target offset (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: check standard target size too (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: add compat version of xt_check_entry_offsets (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: assert minimum target size (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: kill check_entry helper (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: add and use xt_check_entry_offsets (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: validate targets of jumps (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: don't move to non-existent next rule (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: fix unconditional helper (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: validate e->target_offset early (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [net] netfilter: x_tables: check for size overflow (Florian Westphal) [1364809 1318693] {CVE-2016-3134}
+- [block] nvme: Add pci error handlers (David Milburn) [1350352 1288601]
+- [block] nvme: protect against simultaneous shutdown invocations (David Milburn) [1350352 1288601]
+- [block] nvme: Set affinity after allocating request queues (Frank Ramsay) [1350352 1288601]
+- [block] nvme: Fix device cleanup on initialization failure (David Milburn) [1350352 1288601]
+- [block] nvme: fix kernel memory corruption with short INQUIRY buffers (David Milburn) [1350352 1288601]
 - [net] bridge: include in6.h in if_bridge.h for struct in6_addr (Jiri Benc) [1331285 1268057]
 - [net] inet: defines IPPROTO_* needed for module alias generation (Jiri Benc) [1331285 1268057]
 - [net] sync some IP headers with glibc (Jiri Benc) [1331285 1268057]
+
+* Sat Jul 30 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.33.1.el7]
+- [powerpc] mm: don't do tlbie for updatepp request with NO HPTE fault (Gustavo Duarte) [1361462 1287289]
+- [mm] slub: do not drop slab_mutex for sysfs_slab_add (Larry Woodman) [1361019 1282934]
+
+* Tue Jul 26 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.32.1.el7]
+- [fs] xfs: give all workqueues rescuer threads (Brian Foster) [1359630 1298684]
+- [fs] xfs: cancel eofblocks background trimming on remount read-only (Brian Foster) [1358777 1339414]
+- [netdrv] bonding: Prevent IPv6 link local address on enslaved devices (Jarod Wilson) [1357868 1297931]
+- [kernel] ptrace: make wait_on_bit(JOBCTL_TRAPPING_BIT) in ptrace_attach() killable (Jiri Olsa) [1354285 1334503]
+
+* Wed Jul 20 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.31.1.el7]
+- [kernel] ptrace: task_clear_jobctl_trapping()->wake_up_bit() needs mb() (Daniel Bristot de Oliveira) [1354313 1350624]
+- [net] sctp: label accepted/peeled off sockets (Marcelo Leitner) [1354302 1247756]
+- [char] ipmi: Remove smi_msg from waiting_rcv_msgs list before handle_one_recv_msg() (David Arcari) [1353947 1348013]
+- [netdrv] bnx2x: don't wait for Tx completion on recovery (Michal Schmidt) [1351972 1320748]
+- [pci] aer: Clear error status registers during enumeration and restore (Prarit Bhargava) [1350304 1347459]
+
+* Wed Jul 13 2016 Phillip Lougher <plougher@redhat.com> [3.10.0-327.30.1.el7]
+- [net] netfilter: bridge: Use __in6_dev_get rather than in6_dev_get in br_validate_ipv6 (Paolo Abeni) [1343640 1265259]
+- [net] netfilter: bridge: don't leak skb in error paths (Paolo Abeni) [1343640 1265259]
+- [net] netfilter: bridge: forward IPv6 fragmented packets (Paolo Abeni) [1343640 1265259]
+- [net] netfilter: bridge: re-order check_hbh_len() (Paolo Abeni) [1343640 1265259]
+- [net] netfilter: bridge: refactor frag_max_size (Paolo Abeni) [1343640 1265259]
+- [net] netfilter: bridge: really save frag_max_size between PRE and POST_ROUTING (Paolo Abeni) [1343640 1265259]
+- [net] bridge: Save frag_max_size between PRE_ROUTING and POST_ROUTING (Paolo Abeni) [1343640 1265259]
+
+* Thu Jul 07 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.29.1.el7]
+- [fs] fanotify: fix double free of pending permission events (Richard Guy Briggs) [1352939 1339092]
+- [fs] fsnotify: rename event handling functions (Richard Guy Briggs) [1352939 1339092]
+- [fs] fanotify: convert access_mutex to spinlock (Richard Guy Briggs) [1352939 1339092]
+- [fs] fanotify: use fanotify event structure for permission response processing (Richard Guy Briggs) [1352939 1339092]
+- [fs] fanotify: remove useless bypass_perm check (Richard Guy Briggs) [1352939 1339092]
+- [fs] fanotify: fix notification of groups with inode & mount marks (Miklos Szeredi) [1348828 1308393]
+- [fs] fsnotify: Allocate overflow events with proper type (Richard Guy Briggs) [1345774 1135562]
+- [fs] fanotify: Handle overflow in case of permission events (Richard Guy Briggs) [1345774 1135562]
+- [fs] fsnotify: Fix detection whether overflow event is queued (Richard Guy Briggs) [1345774 1135562]
+- [fs] inotify: Fix reporting of cookies for inotify events (Richard Guy Briggs) [1345774 1135562]
+- [fs] fanotify: Fix use after free for permission events (Richard Guy Briggs) [1345774 1135562]
+- [fs] fsnotify: Do not return merged event from fsnotify_add_notify_event() (Richard Guy Briggs) [1345774 1135562]
+- [fs] fanotify: Fix use after free in mask checking (Richard Guy Briggs) [1345774 1135562]
+- [fs] fsnotify: remove pointless NULL initializers (Richard Guy Briggs) [1345774 1135562]
+- [fs] fsnotify: remove .should_send_event callback (Richard Guy Briggs) [1345774 1135562]
+- [fs] fsnotify: do not share events between notification groups (Richard Guy Briggs) [1345774 1135562]
+- [fs] inotify: provide function for name length rounding (Richard Guy Briggs) [1345774 1135562]
+- [fs] revert "inotify: don't add consecutive overflow events to the queue" (Richard Guy Briggs) [1345774 1135562]
+- Revert: [fs] fanotify: fix notification of groups with inode & mount marks (Miklos Szeredi) [1348828 1308393]
 
 * Sat Jun 25 2016 Alexander Gordeev <agordeev@redhat.com> [3.10.0-327.28.1.el7]
 - [netdrv] e1000: Double Tx descriptors needed check for 82544 (Jarod Wilson) [1349448 1274170]
