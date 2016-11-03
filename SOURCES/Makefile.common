@@ -9,7 +9,7 @@ RPMVERSION:=3.10.0
 # marker is git tag which we base off of for exporting patches
 MARKER:=v3.10
 PREBUILD:=
-BUILD:=327.36.3
+BUILD:=514
 DIST:=.el7
 SPECFILE:=kernel.spec
 RPM:=$(REDHAT)/rpm
@@ -38,6 +38,7 @@ endif
 $(info BUILDID is "$(BUILDID)". Update '$(shell dirname $(REDHAT))/localversion' to change.)
 
 PKGRELEASE:=$(PREBUILD)$(BUILD)$(DIST)$(BUILDID)
+SPECRELEASE:=$(PREBUILD)$(BUILD)%{?dist}$(BUILDID)
 
 TARFILE:=linux-$(KVERSION)-$(PKGRELEASE).tar.xz
 TARBALL:=$(REDHAT)/$(TARFILE)
