@@ -3,6 +3,8 @@
 
 Summary: The Linux kernel
 
+%define dist .el7
+
 # % define buildid .local
 
 # For a kernel released for public testing, released_kernel should be 1.
@@ -12,10 +14,10 @@ Summary: The Linux kernel
 %global distro_build 514
 
 %define rpmversion 3.10.0
-%define pkgrelease 514.el7
+%define pkgrelease 514.2.2.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 514%{?dist}
+%define specrelease 514.2.2%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -343,16 +345,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -381,9 +383,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -545,11 +544,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -692,9 +691,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -853,7 +849,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1548,8 +1544,37 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Thu Nov 03 2016 CentOS Sources <bugs@centos.org> - 3.10.0-514.el7.centos
-- Apply debranding changes
+* Wed Nov 16 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.2.2.el7]
+- [kernel] timekeeping: Copy the shadow-timekeeper over the real timekeeper last (Prarit Bhargava) [1395577 1344747]
+
+* Fri Nov 04 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.2.1.el7]
+- [firmware] efi: Fix usage of illegal alignment on efi_low_alloc (Lenny Szubowicz) [1392044 1387689]
+
+* Tue Nov 01 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.1.1.el7]
+- [netdrv] xen-netfront: avoid packet loss when ethernet header crosses page boundary (Vitaly Kuznetsov) [1390257 1348581]
+- [infiniband] ib/iser: Fix max_sectors calculation (Jonathan Toppins) [1389012 1380515]
+- [block] blk-mq: improve warning for running a queue on the wrong CPU (Gustavo Duarte) [1389011 1376948]
+- [block] blk-mq: don't overwrite rq->mq_ctx (Gustavo Duarte) [1389011 1376948]
+- [kernel] pm/sleep: Fix request_firmware() error at resume (Don Zickus) [1389009 1375203]
+- [vfio] vfio-pci: Disable INTx after MSI/X teardown (Alex Williamson) [1389004 1371495]
+- [vfio] vfio-pci: Virtualize PCIe & AF FLR (Alex Williamson) [1389004 1371495]
+- [nvme] Don't suspend admin queue that wasn't created (Gustavo Duarte) [1389001 1370507]
+- [nvme] Suspend all queues before deletion (Gustavo Duarte) [1389001 1370507]
+- [powerpc] kvm: ppc: book3s hv: Take out virtual core piggybacking code (Thomas Huth) [1388997 1350719]
+- [powerpc] kvm: ppc: book3s: Treat VTB as a per-subcore register, not per-thread (Thomas Huth) [1388997 1350719]
+- [powerpc] kvm: ppc: book3s hv: Move struct kvmppc_vcore from kvm_host.h to kvm_book3s.h (Thomas Huth) [1388997 1350719]
+- [scsi] cxgb4i: Increased the value of MAX_IMM_TX_PKT_LEN from 128 to 256 bytes (Sai Vemuri) [1388996 1379954]
+- [scsi] cxgb4i: fix credit check for tx_data_wr (Sai Vemuri) [1388996 1379954]
+- [x86] pci: vmd: Request userspace control of PCIe hotplug indicators (Myron Stowe) [1388881 1380181]
+- [pci] pciehp: Allow exclusive userspace control of indicators (Myron Stowe) [1388881 1380181]
+- [fs] sunrpc: move NO_CRKEY_TIMEOUT to the auth->au_flags (Dave Wysochanski) [1388604 1384666]
+- [x86] fix call location of smp_quirk_init_udelay() (Prarit Bhargava) [1388598 1377296]
+- [x86] hpet: Re-enable HPET on Purley 4S (Prarit Bhargava) [1388597 1372853]
+- [x86] hpet: Reduce HPET counter read contention (Prarit Bhargava) [1388597 1372853]
+- [net] openvswitch: avoid deferred execution of recirc actions (Lance Richardson) [1388592 1370643]
+- [net] ipv4: Use math to point per net sysctls into the appropriate struct net (Eric Garver) [1388591 1363661]
+- [md] dm raid: fix activation of existing raid4/10 devices (Mike Snitzer) [1388504 1385149]
+- [md] dm: free io_barrier after blk_cleanup_queue call (Mike Snitzer) [1388503 1385813]
 
 * Wed Oct 19 2016 Rafael Aquini <aquini@redhat.com> [3.10.0-514.el7]
 - [mm] remove gup_flags FOLL_WRITE games from __get_user_pages() (Larry Woodman) [1385124] {CVE-2016-5195}
