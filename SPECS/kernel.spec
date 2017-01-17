@@ -14,10 +14,10 @@ Summary: The Linux kernel
 %global distro_build 514
 
 %define rpmversion 3.10.0
-%define pkgrelease 514.2.2.el7
+%define pkgrelease 514.6.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 514.2.2%{?dist}
+%define specrelease 514.6.1%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -345,16 +345,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -383,9 +383,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -547,11 +544,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -694,9 +691,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -855,7 +849,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1550,11 +1544,76 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Tue Dec 06 2016 CentOS Sources <bugs@centos.org> - 3.10.0-514.2.2.el7
-- Apply debranding changes
+* Sat Dec 10 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.6.1.el7]
+- [net] sctp: validate chunk len before actually using it (Hangbin Liu) [1399458 1399459] {CVE-2016-9555}
+- [net] sctp: rename WORD_TRUNC/ROUND macros (Hangbin Liu) [1399458 1399459] {CVE-2016-9555}
+- [net] sctp: keep fragmentation point aligned to word size (Hangbin Liu) [1399458 1399459] {CVE-2016-9555}
+- [x86] Mark Intel Purley supported (Steve Best) [1402824 1371748]
+- [acpi] sleep: Do not save NVS for new machines to accelerate S3 (Prarit Bhargava) [1402326 1385527]
+- [scsi] megaraid_sas: Send SYNCHRONIZE_CACHE for VD to firmware (Tomas Henzl) [1398179 1380447]
+- [scsi] megaraid_sas: Fix data integrity failure for JBOD (passthrough) devices (Tomas Henzl) [1398179 1380447]
+- [scsi] megaraid_sas: fix macro MEGASAS_IS_LOGICAL to avoid regression (Tomas Henzl) [1398179 1380447]
+- [netdrv] net/hyperv: avoid uninitialized variable (Vitaly Kuznetsov) [1395578 1392220]
+- [netdrv] netvsc: Remove mistaken udp.h inclusion (Vitaly Kuznetsov) [1395578 1392220]
+- [netdrv] netvsc: fix checksum on UDP IPV6 (Vitaly Kuznetsov) [1395578 1392220]
+- [netdrv] hv_netvsc: add ethtool statistics for tx packet issues (Vitaly Kuznetsov) [1395578 1392220]
+- [netdrv] hv_netvsc: rearrange start_xmit (Vitaly Kuznetsov) [1395578 1392220]
+- [fs] Retry operation on EREMOTEIO on an interrupted slot (Steve Dickson) [1394710 1378981]
+- [fs] rbd: don't retry watch reregistration if header object is gone (Ilya Dryomov) [1393485 1378186]
+- [fs] rbd: don't wait for the lock forever if blacklisted (Ilya Dryomov) [1393485 1378186]
+- [fs] rbd: lock_on_read map option (Ilya Dryomov) [1393485 1378186]
+- [hv] do not lose pending heartbeat vmbus packets (Vitaly Kuznetsov) [1392035 1378615]
+- [netdrv] netvsc: fix incorrect receive checksum offloading (Vitaly Kuznetsov) [1391617 1388702]
+- [x86] kvm: lapic: cap __delay at lapic_timer_advance_ns (Marcelo Tosatti) [1391614 1389431]
+- [x86] kvm: x86: move nsec_to_cycles from x86.c to x86.h (Marcelo Tosatti) [1391614 1389431]
+- [net] tcp: fix use after free in tcp_xmit_retransmit_queue() (Mateusz Guzik) [1379530 1379531] {CVE-2016-6828}
 
-* Wed Nov 16 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.2.2.el7]
+* Mon Dec 05 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.5.1.el7]
+- [fs] Fix regression which breaks DFS mounting (Sachin Prabhu) [1400055 1302329]
+- [fs] Move check for prefix path to within cifs_get_root() (Sachin Prabhu) [1400055 1302329]
+- [fs] Compare prepaths when comparing superblocks (Sachin Prabhu) [1400055 1302329]
+- [fs] Fix memory leaks in cifs_do_mount() (Sachin Prabhu) [1400055 1302329]
+- [fs] cifs: make share unaccessible at root level mountable (Sachin Prabhu) [1400055 1302329]
+- [kernel] sched: Fix possible divide by zero in avg_atom() calculation (Mateusz Guzik) [1398361 1392466]
+- [scsi] megaraid_sas: Do not set MPI2_TYPE_CUDA for JBOD FP path for FW which does not support JBOD sequence map (Tomas Henzl) [1398175 1380441]
+- [x86] smp: Fix __max_logical_packages value setup (Prarit Bhargava) [1398173 1394239]
+- [x86] revert "smp: Fix __max_logical_packages value setup" (Prarit Bhargava) [1398173 1394239]
+- [watchdog] hpwdt: add support for iLO5 (Linda Knippers) [1397747 1382798]
+- [x86] kexec: Fix kexec crash in syscall kexec_file_load() (Pingfan Liu) [1395573 1385109]
+- [powerpc] ppc64: Fix incorrect return value from __copy_tofrom_user (Steve Best) [1395565 1387244]
+- [scsi] megaraid-sas: request irqs later (Tomas Henzl) [1394711 1392978]
+- [netdrv] i40e: Fix errors resulted while turning off TSO (Stefan Assmann) [1394708 1378509]
+- [fs] ext4: pre-zero allocated blocks for DAX IO (Eric Sandeen) [1394707 1367989]
+- [powerpc] pseries: use pci_host_bridge.release_fn() to kfree(phb) (Steve Best) [1393724 1385635]
+- [misc] genwqe: Change default access rights for device node (Steve Best) [1393723 1325797]
+- [misc] hpilo: Changes to support new security states in iLO5 FW (Nigel Croxon) [1393720 1376576]
+- [kernel] sched/core: Fix a race between try_to_wake_up() and a woken up task (Lauro Ramos Venancio) [1393719 1379256]
+- [hid] i2c-hid: exit if the IRQ is not valid (David Arcari) [1393717 1376599]
+- [x86] Add support for missing Kabylake Sunrise Point PCH (David Arcari) [1392033 1379401]
+- [net] sctp: not return ENOMEM err back in sctp_packet_transmit (Xin Long) [1392025 1371362]
+- [net] sctp: make sctp_outq_flush/tail/uncork return void (Xin Long) [1392025 1371362]
+- [net] sctp: save transmit error to sk_err in sctp_outq_flush (Xin Long) [1392025 1371362]
+- [net] sctp: free msg->chunks when sctp_primitive_SEND return err (Xin Long) [1392025 1371362]
+- [net] sctp: do not return the transmit err back to sctp_sendmsg (Xin Long) [1392025 1371362]
+- [net] sctp: remove the unnecessary state check in sctp_outq_tail (Xin Long) [1392025 1371362]
+- [net] netdev, sched/wait: Fix sleeping inside wait event (Paolo Abeni) [1392024 1382175]
+- [net] Separate the close_list and the unreg_list (Paolo Abeni) [1392024 1382175]
+- [vfio] pci: Fix ordering of eventfd vs virqfd shutdown (Alex Williamson) [1391611 1322026]
+- [net] Fix use after free in the recvmmsg exit path (Davide Caratti) [1390806 1390047] {CVE-2016-7117}
+- [fs] nfsd: don't return an unhashed lock stateid after taking mutex ("J. Bruce Fields") [1390672 1368577]
+- [fs] nfsd: Fix race between FREE_STATEID and LOCK ("J. Bruce Fields") [1390672 1368577]
+- [fs] nfsd: Close race between nfsd4_release_lockowner and nfsd4_lock ("J. Bruce Fields") [1390672 1368577]
+- [fs] nfsd: Extend the mutex holding region around in nfsd4_process_open2() ("J. Bruce Fields") [1390672 1368577]
+- [fs] nfsd: Always lock state exclusively ("J. Bruce Fields") [1390672 1368577]
+- [infiniband] ib/ipoib: move back IB LL address into the hard header (Jonathan Toppins) [1390668 1378656]
+
+* Wed Nov 16 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.4.1.el7]
+- [net] rtnetlink: fix rtnl_vfinfo_size (Sabrina Dubroca) [1395811 1392128]
+- [netdrv] ixgbe: test for trust in macvlan adjustments for vf (Ken Cox) [1395572 1379787]
 - [kernel] timekeeping: Copy the shadow-timekeeper over the real timekeeper last (Prarit Bhargava) [1395577 1344747]
+
+* Mon Nov 07 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.3.1.el7]
+- [net] team: Fixing a bug in team driver due to incorrect 'unsigned int' to 'int' conversion (Hangbin Liu) [1392023 1382098]
 
 * Fri Nov 04 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.2.1.el7]
 - [firmware] efi: Fix usage of illegal alignment on efi_low_alloc (Lenny Szubowicz) [1392044 1387689]
