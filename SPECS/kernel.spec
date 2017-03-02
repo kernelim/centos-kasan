@@ -14,10 +14,10 @@ Summary: The Linux kernel
 %global distro_build 514
 
 %define rpmversion 3.10.0
-%define pkgrelease 514.6.2.el7
+%define pkgrelease 514.10.2.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 514.6.2%{?dist}
+%define specrelease 514.10.2%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -345,16 +345,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -383,9 +383,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -547,11 +544,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -694,9 +691,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -855,7 +849,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1550,11 +1544,67 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Wed Feb 22 2017 CentOS Sources <bugs@centos.org> - 3.10.0-514.6.2.el7
-- Apply debranding changes
-
-* Fri Feb 17 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.6.2.el7]
+* Mon Feb 20 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.10.2.el7]
 - [net] dccp: fix freeing skb too early for IPV6_RECVPKTINFO (Hannes Frederic Sowa) [1423462 1423463]
+
+* Mon Jan 30 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.10.1.el7]
+- [block] blk-mq: Fix NULL pointer updating nr_requests (David Milburn) [1416133 1384066]
+- [scsi] cxlflash: Fix crash in cxlflash_restore_luntable() (Gustavo Duarte) [1415146 1400524]
+- [scsi] cxlflash: Improve context_reset() logic (Gustavo Duarte) [1415146 1400524]
+- [scsi] cxlflash: Avoid command room violation (Gustavo Duarte) [1415146 1400524]
+- [x86] Mark Kaby Lake with Kaby Lake PCH as supported (David Arcari) [1415094 1391219]
+- [scsi] be2iscsi: Add checks to validate completions (Maurizio Lombardi) [1414687 1324918]
+- [scsi] be2iscsi: Fix bad WRB index error (Maurizio Lombardi) [1414687 1324918]
+- [scsi] be2iscsi: Add lock to protect WRB alloc and free (Maurizio Lombardi) [1414687 1324918]
+- [mm] meminit: initialise more memory for inode/dentry hash tables in early boot (Yasuaki Ishimatsu) [1413623 1404584]
+- [s390] mem_detect: Revert "add DAT sanity check" (Hendrik Brueckner) [1413600 1391540]
+- [cpufreq] intel_pstate: Fix code ordering in intel_pstate_set_policy() (Prarit Bhargava) [1411818 1398072]
+- [scsi] cxlflash: Improve EEH recovery time (Steve Best) [1402442 1397588]
+- [scsi] cxlflash: Fix to avoid EEH and host reset collisions (Steve Best) [1402442 1397588]
+- [scsi] cxlflash: Remove the device cleanly in the system shutdown path (Steve Best) [1402442 1397588]
+- [scsi] cxlflash: Scan host only after the port is ready for I/O (Steve Best) [1402442 1397588]
+- [x86] kvm: x86: Check memopp before dereference (Mateusz Guzik) [1395805 1395806] {CVE-2016-8630}
+- [vfio] pci: Fix integer overflows, bitmask check (Mateusz Guzik) [1394627 1394991 1394628 1394992] {CVE-2016-9083 CVE-2016-9084}
+- [acpi] acpi / scan: use platform bus type by default for _HID enumeration (Tony Camuso) [1393727 1383505]
+- [acpi] acpi / scan: introduce platform_id device PNP type flag (Tony Camuso) [1393727 1383505]
+- [char] ipmi: Convert the IPMI SI ACPI handling to a platform device (Tony Camuso) [1393727 1383505]
+- [acpi] acpi / ipmi: Cleanup coding styles (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Cleanup some inclusion codes (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Cleanup some initialization codes (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Cleanup several acpi_ipmi_device members (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Add reference counting for ACPI IPMI transfers (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Use global IPMI operation region handler (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Fix race caused by the unprotected ACPI IPMI user (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Fix race caused by the timed out ACPI IPMI transfers (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Fix race caused by the unprotected ACPI IPMI transfers (David Arcari) [1393725 1373703]
+- [acpi] acpi / ipmi: Fix potential response buffer overflow (David Arcari) [1393725 1373703]
+
+* Sat Jan 21 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.9.1.el7]
+- [drm] i915/kbl: Remove preliminary_hw_support protection from KBL. (Rob Clark) [1413092 1305702]
+- [netdrv] slip: Fix deadlock in write_wakeup (Steve Best) [1412225 1403497]
+- [netdrv] slip: fix spinlock variant (Steve Best) [1412225 1403497]
+- [kernel] kmod: use system_unbound_wq instead of khelper (Luiz Capitulino) [1411816 1395860]
+- [nvme] switch abort to blk_execute_rq_nowait (David Milburn) [1411669 1392923]
+- [netdrv] ibmveth: calculate gso_segs for large packets (Gustavo Duarte) [1411382 1361958]
+- [netdrv] ibmveth: set correct gso_size and gso_type (Gustavo Duarte) [1411382 1361958]
+- [netdrv] allow macvlans to move to net namespace (Jarod Wilson) [1409829 1368830]
+- [pci] Set Read Completion Boundary to 128 iff Root Port supports it (_HPX) (Myron Stowe) [1406290 1387674]
+- [pci] Export pcie_find_root_port() (Myron Stowe) [1406290 1387674]
+- [rtc] cmos: Initialize hpet timer before irq is registered (Pratyush Anand) [1404184 1299001]
+- [x86] amd: Fix cpu_llc_id for AMD Fam17h systems (Suravee Suthikulpanit) [1402444 1395399]
+- [powerpc] powernv: Fix stale PE primary bus (Steve Best) [1402440 1395275]
+- [misc] cxl: Fix coredump generation when cxl_get_fd() is used (Gustavo Duarte) [1402439 1397943]
+- [pci] cxl: use pcibios_free_controller_deferred() when removing vPHBs (Gustavo Duarte) [1402438 1395323]
+- [scsi] qla2xxx: do not abort all commands in the adapter during EEH recovery (Gustavo Duarte) [1402436 1393254]
+- [scsi] qla2xxx: fix invalid DMA access after command aborts in PCI device remove (Gustavo Duarte) [1402436 1393254]
+- [scsi] qla2xxx: do not queue commands when unloading (Gustavo Duarte) [1402436 1393254]
+- [net] packet: fix race condition in packet_set_ring (Hangbin Liu) [1401852 1401853] {CVE-2016-8655}
+
+* Tue Jan 17 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.8.1.el7]
+- [netdrv] i40e: Fix corruption when transferring large files (Stefan Assmann) [1413101 1404060]
+
+* Wed Dec 21 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.7.1.el7]
+- [kernel] printk: avoid livelock if another CPU printks continuously (Denys Vlasenko) [1402314 1294066]
 
 * Sat Dec 10 2016 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.6.1.el7]
 - [net] sctp: validate chunk len before actually using it (Hangbin Liu) [1399458 1399459] {CVE-2016-9555}
