@@ -14,10 +14,10 @@ Summary: The Linux kernel
 %global distro_build 514
 
 %define rpmversion 3.10.0
-%define pkgrelease 514.10.2.el7
+%define pkgrelease 514.16.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 514.10.2%{?dist}
+%define specrelease 514.16.1%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -345,16 +345,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer 
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -383,9 +383,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -547,11 +544,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -694,9 +691,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -855,7 +849,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1550,11 +1544,122 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Thu Mar  2 2017 Johnny Hughes <johnny@centos.org> [3.10.0-514.10.2.el7]
-- Manually debrand after auto debranding failed.
+* Fri Mar 10 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.16.1.el7]
+- [tty] n_hdlc: get rid of racy n_hdlc.tbuf ("Herton R. Krzesinski") [1429919 1429920] {CVE-2017-2636}
+- [md] dm rq: cope with DM device destruction while in dm_old_request_fn() (Mike Snitzer) [1430334 1412854]
+- [fs] nfs: Fix inode corruption in nfs_prime_dcache() (Benjamin Coddington) [1429514 1416532]
+- [fs] nfs: Don't let readdirplus revalidate an inode that was marked as stale (Benjamin Coddington) [1429514 1416532]
+- [block] Copy a user iovec if it includes gaps (Jeff Moyer) [1429508 1421263]
+- [kernel] percpu-refcount: fix reference leak during percpu-atomic transition (Jeff Moyer) [1429507 1418333]
+- [powerpc] eeh: eeh_pci_enable(): fix checking of post-request state (Steve Best) [1425538 1383670]
+- [s390] mm: handle PTE-mapped tail pages in fast gup (Hendrik Brueckner) [1423438 1391532]
+- [net] skbuff: Fix skb checksum partial check (Lance Richardson) [1422964 1411480]
+- [net] skbuff: Fix skb checksum flag on skb pull (Lance Richardson) [1422964 1411480]
+- [security] selinux: fix off-by-one in setprocattr (Paul Moore) [1422368 1422369] {CVE-2017-2618}
+- [virtio] balloon: check the number of available pages in leak balloon (David Hildenbrand) [1417194 1401615]
+- [infiniband] ib/rdmavt: Only put mmap_info ref if it exists (Jonathan Toppins) [1417191 1391299]
+- [x86] kvm: x86: make lapic hrtimer pinned (Luiz Capitulino) [1416373 1392593]
+- [kernel] sched/nohz: Fix affine unpinned timers mess (Luiz Capitulino) [1416373 1392593]
+- [kernel] nohz: Affine unpinned timers to housekeepers (Luiz Capitulino) [1416373 1392593]
+- [kernel] tick-sched: add housekeeping_mask cpumask (Luiz Capitulino) [1416373 1392593]
+- [x86] platform/uv/bau: Add UV4-specific functions (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Fix payload queue setup on UV4 hardware (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Disable software timeout on UV4 hardware (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Populate ->uvhub_version with UV4 version information (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Use generic function pointers (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Add generic function pointers (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Convert uv_physnodeaddr() use to uv_gpa_to_offset() (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Clean up pq_init() (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Clean up and update printks (Frank Ramsay) [1414715 1386692]
+- [x86] platform/uv/bau: Clean up vertical alignment (Frank Ramsay) [1414715 1386692]
+- [virtio] virtio-pci: alloc only resources actually used (Laurent Vivier) [1413093 1375153]
+- [net] avoid signed overflows for SO_{SND|RCV}BUFFORCE (Sabrina Dubroca) [1412473 1412474] {CVE-2016-9793}
+- [netdrv] sfc: clear napi_hash state when copying channels (Jarod Wilson) [1401461 1394304]
+- [lib] mpi: Fix NULL ptr dereference in mpi_powm() (Mateusz Guzik) [1398457 1398458] {CVE-2016-8650}
+- [scsi] lpfc: Fix eh_deadline setting for sli3 adapters (Ewan Milne) [1430687 1366564]
+- [md] dm round robin: revert "use percpu 'repeat_count' and 'current_path'" (Mike Snitzer) [1430689 1422567]
+- [md] dm round robin: do not use this_cpu_ptr() without having preemption disabled (Mike Snitzer) [1430689 1422567]
+- Revert: [x86] Handle non enumerated CPU after physical hotplug (Prarit Bhargava) [1426633 1373738]
+- Revert: [x86] smp: Don't try to poke disabled/non-existent APIC (Prarit Bhargava) [1426633 1373738]
+- Revert: [x86] smpboot: Init apic mapping before usage (Prarit Bhargava) [1426633 1373738]
+- Revert: [x86] revert "perf/uncore: Disable uncore on kdump kernel" (Prarit Bhargava) [1426633 1373738]
+- Revert: [x86] perf/x86/intel/uncore: Fix hardcoded socket 0 assumption in the Haswell init code (Prarit Bhargava) [1426633 1373738]
 
-* Mon Feb 20 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.10.2.el7]
-- [net] dccp: fix freeing skb too early for IPV6_RECVPKTINFO (Hannes Frederic Sowa) [1423462 1423463]
+* Fri Mar 03 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.15.1.el7]
+- [net] vxlan: fix oops in dev_fill_metadata_dst (Paolo Abeni) [1427847 1423068]
+- [x86] perf/x86/intel/uncore: Fix hardcoded socket 0 assumption in the Haswell init code (Prarit Bhargava) [1426633 1373738]
+- [x86] revert "perf/uncore: Disable uncore on kdump kernel" (Prarit Bhargava) [1426633 1373738]
+- [x86] smpboot: Init apic mapping before usage (Prarit Bhargava) [1426633 1373738]
+- [x86] smp: Don't try to poke disabled/non-existent APIC (Prarit Bhargava) [1426633 1373738]
+- [x86] Handle non enumerated CPU after physical hotplug (Prarit Bhargava) [1426633 1373738]
+- [x86] perf/x86: Fix NMI measurements (Jiri Olsa) [1425804 1405101]
+- [x86] Warn when NMI handlers take large amounts of time (Jiri Olsa) [1425804 1405101]
+- [nvme] apply DELAY_BEFORE_CHK_RDY quirk at probe time too (Gustavo Duarte) [1423439 1409122]
+- [crypto] qat - zero esram only for DH85x devices (Neil Horman) [1422575 1382849]
+- [crypto] qat - fix bar discovery for c62x (Neil Horman) [1422575 1382849]
+- [fs] xfs: remove racy hasattr check from attr ops (Brian Foster) [1421202 1395538]
+- [fs] dlm: free workqueues after the connections (Marcelo Leitner) [1421197 1383710]
+- [netdrv] igb: re-assign hw address pointer on reset after PCI error (Gustavo Duarte) [1419459 1413043]
+- [kernel] timekeeping: Increment clock_was_set_seq in timekeeping_init() (Prarit Bhargava) [1418947 1409214]
+- [kernel] timekeeping: Use timekeeping_update() instead of memcpy() (Prarit Bhargava) [1418947 1409214]
+- [fs] libceph: no need to drop con->mutex for ->get_authorizer() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: drop len argument of *verify_authorizer_reply() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: verify authorize reply on connect (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: no need for GFP_NOFS in ceph_monc_init() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: stop allocating a new cipher on every crypto request (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: uninline ceph_crypto_key_destroy() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: remove now unused ceph_*{en, de}crypt*() functions (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: switch ceph_x_decrypt() to ceph_crypt() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: switch ceph_x_encrypt() to ceph_crypt() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: tweak calcu_signature() a little (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: rename and align ceph_x_authorizer::reply_buf (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: introduce ceph_crypt() for in-place en/decryption (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: introduce ceph_x_encrypt_offset() (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: old_key in process_one_ticket() is redundant (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: ceph_x_encrypt_buflen() takes in_len (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: Remove unnecessary ivsize variables (Ilya Dryomov) [1418316 1408170]
+- [fs] libceph: Use skcipher (Ilya Dryomov) [1418316 1408170]
+- [scsi] scsi_lib: correctly retry failed zero length REQ_TYPE_FS commands (Ewan Milne) [1417923 1403849]
+- [netdrv] ibmvnic: Start completion queue negotiation at server-provided optimum values (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: Fix missing brackets in init_sub_crq_irqs (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: Fix releasing of sub-CRQ IRQs in interrupt context (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: Update MTU after device initialization (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: Fix GFP_KERNEL allocation in interrupt context (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: fix error return code in ibmvnic_probe() (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: convert to use simple_open() (Steve Best) [1415144 1403396]
+- [netdrv] ibmvnic: Handle backing device failover and reinitialization (Steve Best) [1418309 1403692]
+- [tools] perf ppc64le: Fix build failure when libelf is not present (Jiri Olsa) [1414710 1376534]
+- [tools] perf probe ppc64le: Fix probe location when using DWARF (Jiri Olsa) [1414710 1376534]
+- [tools] perf probe: Add function to post process kernel trace events (Jiri Olsa) [1414710 1376534]
+- [tools] perf symbols: Fix kallsyms perf test on ppc64le (Jiri Olsa) [1414710 1376534]
+- [tools] perf powerpc: Fix kprobe and kretprobe handling with kallsyms on ppc64le (Jiri Olsa) [1414710 1376534]
+- [netdrv] bnx2x: Use the correct divisor value for PHC clock readings (Michal Schmidt) [1413996 1175585]
+- [fs] seq_file: reset iterator to first record for zero offset (Miklos Szeredi) [1413681 1386642]
+
+* Thu Feb 23 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.14.1.el7]
+- [net] dccp: fix freeing skb too early for IPV6_RECVPKTINFO (Hannes Frederic Sowa) [1423462 1423463] {CVE-2017-6074}
+- [net] sctp: check af before verify address in sctp_addr_id2transport (Xin Long) [1419837 1414389]
+- [net] sctp: sctp_addr_id2transport should verify the addr before looking up assoc (Xin Long) [1419837 1414389]
+
+* Thu Feb 16 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.13.1.el7]
+- [fs] gfs2: Reduce contention on gfs2_log_lock (Robert S Peterson) [1422380 1406850]
+- [fs] gfs2: Inline function meta_lo_add (Robert S Peterson) [1422380 1406850]
+- [fs] gfs2: Switch tr_touched to flag in transaction (Robert S Peterson) [1422380 1406850]
+- [fs] xfs: ioends require logically contiguous file offsets (Brian Foster) [1421203 1398005]
+- [fs] xfs: don't chain ioends during writepage submission (Brian Foster) [1421203 1398005]
+- [fs] xfs: factor mapping out of xfs_do_writepage (Brian Foster) [1421203 1398005]
+- [fs] xfs: xfs_cluster_write is redundant (Brian Foster) [1421203 1398005]
+- [fs] xfs: Introduce writeback context for writepages (Brian Foster) [1421203 1398005]
+- [fs] xfs: remove xfs_cancel_ioend (Brian Foster) [1421203 1398005]
+- [fs] xfs: remove nonblocking mode from xfs_vm_writepage (Brian Foster) [1421203 1398005]
+- [fs] mm/filemap.c: make global sync not clear error status of individual inodes (Brian Foster) [1421203 1398005]
+
+* Thu Feb 09 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.12.1.el7]
+- [fs] fscache: Fix dead object requeue (David Howells) [1420737 1415402]
+
+* Thu Feb 02 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.11.1.el7]
+- [scsi] qla2xxx: Get mutex lock before checking optrom_state (Chad Dupuis) [1418317 1408387]
+- [mm] memcontrol: do not recurse in direct reclaim (Rik van Riel) [1417192 1397330]
 
 * Mon Jan 30 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.10.1.el7]
 - [block] blk-mq: Fix NULL pointer updating nr_requests (David Milburn) [1416133 1384066]
