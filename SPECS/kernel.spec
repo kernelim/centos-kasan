@@ -14,10 +14,10 @@ Summary: The Linux kernel
 %global distro_build 514
 
 %define rpmversion 3.10.0
-%define pkgrelease 514.16.1.el7
+%define pkgrelease 514.21.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 514.16.1%{?dist}
+%define specrelease 514.21.1%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -345,16 +345,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -383,9 +383,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -547,11 +544,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -694,9 +691,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -855,7 +849,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -1550,8 +1544,96 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Wed Apr 12 2017 CentOS Sources <bugs@centos.org> - 3.10.0-514.16.1.el7
-- Apply debranding changes
+* Sat Apr 22 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.21.1.el7]
+- [kernel] sched/core: Fix an SMP ordering race in try_to_wake_up() vs. schedule() (Gustavo Duarte) [1441547 1423400]
+- [drivers] Set dev->device_rh to NULL after free (Prarit Bhargava) [1441544 1414064]
+- [security] keys: request_key() should reget expired keys rather than give EKEYEXPIRED (David Howells) [1441287 1408330]
+- [security] keys: Simplify KEYRING_SEARCH_{NO, DO}_STATE_CHECK flags (David Howells) [1441287 1408330]
+- [net] packet: fix overflow in check for tp_reserve (Hangbin Liu) [1441171 1441172] {CVE-2017-7308}
+- [net] packet: fix overflow in check for tp_frame_nr (Hangbin Liu) [1441171 1441172] {CVE-2017-7308}
+- [net] packet: fix overflow in check for priv area size (Hangbin Liu) [1441171 1441172] {CVE-2017-7308}
+- [powerpc] pseries: Use H_CLEAR_HPT to clear MMU hash table during kexec (Steve Best) [1439812 1423396]
+- [netdrv] fjes: Fix wrong netdevice feature flags (Yasuaki Ishimatsu) [1439802 1435603]
+- [kernel] mlx5e: Implement Fragmented Work Queue (WQ) (Don Dutile) [1439164 1368400]
+- [netdrv] mlx5e: Copy all L2 headers into inline segment (Don Dutile) [1439161 1383013]
+- [nvdimm] fix PHYS_PFN/PFN_PHYS mixup (Jeff Moyer) [1439160 1428115]
+- [s390] scsi: zfcp: fix rport unblock race with LUN recovery (Hendrik Brueckner) [1433413 1421750]
+- [fs] gfs2: Avoid alignment hole in struct lm_lockname (Robert S Peterson) [1432554 1425450]
+- [fs] gfs2: Add missing rcu locking for glock lookup (Robert S Peterson) [1432554 1425450]
+- [fs] ext4: fix fencepost in s_first_meta_bg validation (Lukas Czerner) [1430969 1332503] {CVE-2016-10208}
+- [fs] ext4: sanity check the block and cluster size at mount time (Lukas Czerner) [1430969 1332503] {CVE-2016-10208}
+- [fs] ext4: validate s_first_meta_bg at mount time (Lukas Czerner) [1430969 1332503] {CVE-2016-10208}
+- [net] sctp: deny peeloff operation on asocs with threads sleeping on it (Hangbin Liu) [1429496 1429497] {CVE-2017-5986 CVE-2017-6353}
+- [net] sctp: avoid BUG_ON on sctp_wait_for_sndbuf (Hangbin Liu) [1429496 1429497] {CVE-2017-5986 CVE-2017-6353}
+- [x86] perf/x86/intel/rapl: Make package handling more robust (Jiri Olsa) [1443902 1418688]
+- [x86] perf/x86/intel/rapl: Convert to hotplug state machine (Jiri Olsa) [1443902 1418688]
+- [x86] perf/x86: Set pmu->module in Intel PMU modules (Jiri Olsa) [1443902 1418688]
+- [kernel] sched/core, x86/topology: Fix NUMA in package topology bug (Jiri Olsa) [1441645 1369832]
+- [kernel] sched: Allow hotplug notifiers to be setup early (Jiri Olsa) [1441645 1369832]
+- [x86] x86/smpboot: Make logical package management more robust (Prarit Bhargava) [1441643 1414054]
+- [x86] x86/cpu: Deal with broken firmware (VMWare/XEN) (Prarit Bhargava) [1441643 1414054]
+- [x86] perf/x86/intel/uncore: Fix hardcoded socket 0 assumption in the Haswell init code (Prarit Bhargava) [1426633 1373738]
+- [x86] revert "perf/uncore: Disable uncore on kdump kernel" (Prarit Bhargava) [1426633 1373738]
+- [x86] smpboot: Init apic mapping before usage (Prarit Bhargava) [1426633 1373738]
+- [x86] smp: Don't try to poke disabled/non-existent APIC (Prarit Bhargava) [1426633 1373738]
+- [x86] Handle non enumerated CPU after physical hotplug (Prarit Bhargava) [1426633 1373738]
+- [block] fix use-after-free in seq file (Denys Vlasenko) [1418550 1418551] {CVE-2016-7910}
+- [crypto] algif_hash - Only export and import on sockets with data (Herbert Xu) [1394101 1387632] {CVE-2016-8646}
+- [char] hwrng: core - sleep interruptible in read (Amit Shah) [1443503 1376397]
+- [char] hwrng: core - correct error check of kthread_run call (Amit Shah) [1443503 1376397]
+- [char] hwrng: core - Move hwrng_init call into set_current_rng (Amit Shah) [1443503 1376397]
+- [char] hwrng: core - Drop current rng in set_current_rng (Amit Shah) [1443503 1376397]
+- [char] hwrng: core - Do not register device opportunistically (Amit Shah) [1443503 1376397]
+- [char] hwrng: core - Fix current_rng init/cleanup race yet again (Amit Shah) [1443503 1376397]
+- [char] hwrng: core - Use struct completion for cleanup_done (Amit Shah) [1443503 1376397]
+- [char] hwrng: don't init list element we're about to add to list (Amit Shah) [1443503 1376397]
+- [char] hwrng: don't double-check old_rng (Amit Shah) [1443503 1376397]
+- [char] hwrng: fix unregister race (Amit Shah) [1443503 1376397]
+- [char] hwrng: use reference counts on each struct hwrng (Amit Shah) [1443503 1376397]
+- [char] hwrng: move some code out mutex_lock for avoiding underlying deadlock (Amit Shah) [1443503 1376397]
+- [char] hwrng: place mutex around read functions and buffers (Amit Shah) [1443503 1376397]
+- [char] virtio-rng: skip reading when we start to remove the device (Amit Shah) [1443503 1376397]
+- [char] virtio-rng: fix stuck of hot-unplugging busy device (Amit Shah) [1443503 1376397]
+- [infiniband] ib/mlx5: Resolve soft lock on massive reg MRs (Don Dutile) [1444347 1417285]
+
+* Tue Apr 11 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.20.1.el7]
+- [powerpc] fadump: Fix the race in crash_fadump() (Steve Best) [1439810 1420077]
+- [kernel] locking/mutex: Explicitly mark task as running after wakeup (Gustavo Duarte) [1439803 1423397]
+- [netdrv] ixgbe: Force VLNCTRL.VFE to be set in all VMDq paths (Ken Cox) [1438421 1383524]
+- [fs] nfsv4.0: always send mode in SETATTR after EXCLUSIVE4 (Benjamin Coddington) [1437967 1415780]
+- [net] fix creation adjacent device symlinks (Adrian Reber) [1436646 1412898]
+- [net] prevent of emerging cross-namespace symlinks (Adrian Reber) [1436646 1412898]
+- [netdrv] macvlan: unregister net device when netdev_upper_dev_link() fails (Adrian Reber) [1436646 1412898]
+- [scsi] vmw_pvscsi: return SUCCESS for successful command aborts (Ewan Milne) [1435764 1394172]
+- [infiniband] ib/uverbs: Fix race between uverbs_close and remove_one (Don Dutile) [1435187 1417284]
+- [fs] gfs2: Prevent BUG from occurring when normal Withdraws occur (Robert S Peterson) [1433882 1404005]
+- [fs] jbd2: fix incorrect unlock on j_list_lock (Lukas Czerner) [1433881 1403346]
+- [fs] xfs: don't wrap ID in xfs_dq_get_next_id (Eric Sandeen) [1433415 1418182]
+- [net] tcp/dccp: avoid starving bh on connect (Paolo Abeni) [1433320 1401419]
+- [fs] xfs: fix up xfs_swap_extent_forks inline extent handling (Eric Sandeen) [1432154 1412945]
+- [x86] kvm: vmx: handle PML full VMEXIT that occurs during event delivery (Radim Krcmar) [1431666 1421296]
+- [virt] kvm: vmx: ensure VMCS is current while enabling PML (Radim Krcmar) [1431666 1421296]
+- [net] ip_tunnel: Create percpu gro_cell (Jiri Benc) [1431197 1424076]
+- [x86] kvm: x86: do not save guest-unsupported XSAVE state (Radim Krcmar) [1431150 1401767]
+- [scsi] mpt3sas: Force request partial completion alignment (Tomas Henzl) [1430809 1418286]
+
+* Thu Mar 30 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.19.1.el7]
+- [fs] gfs2: Wake up io waiters whenever a flush is done (Robert S Peterson) [1437126 1404301]
+- [fs] gfs2: Made logd daemon take into account log demand (Robert S Peterson) [1437126 1404301]
+- [fs] gfs2: Limit number of transaction blocks requested for truncates (Robert S Peterson) [1437126 1404301]
+- [net] ipv6: addrconf: fix dev refcont leak when DAD failed (Hangbin Liu) [1436588 1416105]
+
+* Wed Mar 22 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.18.1.el7]
+- [net] ipv6: don't increase size when refragmenting forwarded ipv6 skbs (Florian Westphal) [1434589 1430571]
+- [net] bridge: drop netfilter fake rtable unconditionally (Florian Westphal) [1434589 1430571]
+- [net] ipv6: avoid write to a possibly cloned skb (Florian Westphal) [1434589 1430571]
+- [net] netfilter: bridge: honor frag_max_size when refragmenting (Florian Westphal) [1434589 1430571]
+- [net] bridge: Add br_netif_receive_skb remove netif_receive_skb_sk (Ivan Vecera) [1434589 1352289]
+
+* Fri Mar 17 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.17.1.el7]
+- [netdrv] i40e: Be much more verbose about what we can and cannot offload (Stefan Assmann) [1433273 1383521]
+- [kernel] watchdog: prevent false hardlockup on overloaded system (Don Zickus) [1433267 1399881]
+- [net] dccp/tcp: fix routing redirect race (Eric Garver) [1433265 1387485]
 
 * Fri Mar 10 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.16.1.el7]
 - [tty] n_hdlc: get rid of racy n_hdlc.tbuf ("Herton R. Krzesinski") [1429919 1429920] {CVE-2017-2636}
