@@ -14,10 +14,10 @@ Summary: The Linux kernel
 %global distro_build 514
 
 %define rpmversion 3.10.0
-%define pkgrelease 514.21.2.el7
+%define pkgrelease 514.26.1.el7
 
 # allow pkg_release to have configurable %{?dist} tag
-%define specrelease 514.21.2%{?dist}
+%define specrelease 514.26.1%{?dist}
 
 %define pkg_release %{specrelease}%{?buildid}
 
@@ -68,6 +68,9 @@ Summary: The Linux kernel
 # Control whether we perform a compat. check against published ABI.
 %define with_kabichk   %{?_without_kabichk:   0} %{?!_without_kabichk:   1}
 
+# Control whether we perform a compat. check against DUP ABI.
+%define with_kabidupchk 1
+
 # should we do C=1 builds with sparse
 %define with_sparse    %{?_with_sparse:       1} %{?!_with_sparse:       0}
 
@@ -85,6 +88,11 @@ Summary: The Linux kernel
 %if %{with_gcov}
 %define with_debug 0
 %define with_kabichk 0
+%endif
+
+# turn off kABI DUP check if kABI check is disabled
+%if !%{with_kabichk}
+%define with_kabidupchk 0
 %endif
 
 %define make_target bzImage
@@ -345,16 +353,16 @@ Source10: sign-modules
 Source11: x509.genkey
 Source12: extra_certificates
 %if %{?released_kernel}
-Source13: centos.cer
+Source13: securebootca.cer
 Source14: secureboot.cer
 %define pesign_name redhatsecureboot301
 %else
-Source13: centos.cer
-Source14: secureboot.cer
+Source13: redhatsecurebootca2.cer
+Source14: redhatsecureboot003.cer
 %define pesign_name redhatsecureboot003
 %endif
-Source15: centos-ldup.x509
-Source16: centos-kpatch.x509
+Source15: rheldup3.x509
+Source16: rhelkpatch1.x509
 
 Source18: check-kabi
 
@@ -362,8 +370,12 @@ Source20: Module.kabi_x86_64
 Source21: Module.kabi_ppc64
 Source22: Module.kabi_ppc64le
 Source23: Module.kabi_s390x
+Source24: Module.kabi_dup_x86_64
+Source25: Module.kabi_dup_ppc64
+Source26: Module.kabi_dup_ppc64le
+Source27: Module.kabi_dup_s390x
 
-Source25: kernel-abi-whitelists-%{distro_build}.tar.bz2
+Source30: kernel-abi-whitelists-%{distro_build}.tar.bz2
 
 Source50: kernel-%{version}-x86_64.config
 Source51: kernel-%{version}-x86_64-debug.config
@@ -383,9 +395,6 @@ Source2001: cpupower.config
 
 # empty final patch to facilitate testing of kernel patches
 Patch999999: linux-kernel-test.patch
-Patch1000: debrand-single-cpu.patch
-Patch1001: debrand-rh_taint.patch
-Patch1002: debrand-rh-i686-cpu.patch
 
 BuildRoot: %{_tmppath}/kernel-%{KVRA}-root
 
@@ -547,11 +556,11 @@ kernel-gcov includes the gcov graph and source files for gcov coverage collectio
 %endif
 
 %package -n kernel-abi-whitelists
-Summary: The CentOS Linux kernel ABI symbol whitelists
+Summary: The Red Hat Enterprise Linux kernel ABI symbol whitelists
 Group: System Environment/Kernel
 AutoReqProv: no
 %description -n kernel-abi-whitelists
-The kABI package contains information pertaining to the CentOS
+The kABI package contains information pertaining to the Red Hat Enterprise
 Linux kernel ABI, including lists of kernel symbols that are needed by
 external Linux kernel modules, and a yum plugin to aid enforcement.
 
@@ -694,9 +703,6 @@ cd linux-%{KVRA}
 cp $RPM_SOURCE_DIR/kernel-%{version}-*.config .
 
 ApplyOptionalPatch linux-kernel-test.patch
-ApplyOptionalPatch debrand-single-cpu.patch
-ApplyOptionalPatch debrand-rh_taint.patch
-ApplyOptionalPatch debrand-rh-i686-cpu.patch
 
 # Any further pre-build tree manipulations happen here.
 
@@ -855,7 +861,7 @@ BuildKernel() {
     fi
 # EFI SecureBoot signing, x86_64-only
 %ifarch x86_64
-    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE13}
+    %pesign -s -i $KernelImage -o $KernelImage.signed -a %{SOURCE13} -c %{SOURCE14} -n %{pesign_name}
     mv $KernelImage.signed $KernelImage
 %endif
     $CopyKernel $KernelImage $RPM_BUILD_ROOT/%{image_install_path}/$InstallName-$KernelVer
@@ -930,6 +936,17 @@ BuildKernel() {
         rm $RPM_BUILD_ROOT/Module.kabi # for now, don't keep it around.
     else
         echo "**** NOTE: Cannot find reference Module.kabi file. ****"
+    fi
+%endif
+
+%if %{with_kabidupchk}
+    echo "**** kABI DUP checking is enabled in kernel SPEC file. ****"
+    if [ -e $RPM_SOURCE_DIR/Module.kabi_dup_%{_target_cpu}$Flavour ]; then
+        cp $RPM_SOURCE_DIR/Module.kabi_dup_%{_target_cpu}$Flavour $RPM_BUILD_ROOT/Module.kabi
+        $RPM_SOURCE_DIR/check-kabi -k $RPM_BUILD_ROOT/Module.kabi -s Module.symvers || exit 1
+        rm $RPM_BUILD_ROOT/Module.kabi # for now, don't keep it around.
+    else
+        echo "**** NOTE: Cannot find DUP reference Module.kabi file. ****"
     fi
 %endif
 
@@ -1221,7 +1238,7 @@ INSTALL_KABI_PATH=$RPM_BUILD_ROOT/lib/modules/
 mkdir -p $INSTALL_KABI_PATH
 
 # install kabi releases directories
-tar xjvf %{SOURCE25} -C $INSTALL_KABI_PATH
+tar xjvf %{SOURCE30} -C $INSTALL_KABI_PATH
 %endif  # with_kernel_abi_whitelists
 
 %if %{with_perf}
@@ -1550,11 +1567,58 @@ fi
 %kernel_variant_files %{with_kdump} kdump
 
 %changelog
-* Mon Jun 19 2017 CentOS Sources <bugs@centos.org> - 3.10.0-514.21.2.el7
-- Apply debranding changes
+* Tue Jun 20 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.26.1.el7]
+- [mm] enlarge stack guard gap (Larry Woodman) [1452732 1452733] {CVE-2017-1000364}
+- Revert: [md] dm mirror: use all available legs on multiple failures (Mike Snitzer) [1449176 1383444]
 
-* Sun May 28 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.21.2.el7]
-- [mm] enlarge stack guard gap (Larry Woodman) [1452732 1452733]
+* Sat May 27 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.25.1.el7]
+- [lib] kobject: grab an extra reference on kobject->sd to allow duplicate deletes (Aristeu Rozanski) [1454851 1427252]
+- [kernel] module: When modifying a module's text ignore modules which are going away too (Aaron Tomlin) [1454684 1386313]
+- [kernel] module: Ensure a module's state is set accordingly during module coming cleanup code (Aaron Tomlin) [1454684 1386313]
+- [net] vxlan: do not output confusing error message (Jiri Benc) [1454636 1445054]
+- [net] vxlan: correctly handle ipv6.disable module parameter (Jiri Benc) [1454636 1445054]
+- [iommu] vt-d: fix range computation when making room for large pages (Alex Williamson) [1450856 1435612]
+- [fs] nfsd: stricter decoding of write-like NFSv2/v3 ops ("J. Bruce Fields") [1449282 1443204] {CVE-2017-7895}
+- [fs] nfsd4: minor NFSv2/v3 write decoding cleanup ("J. Bruce Fields") [1449282 1443204] {CVE-2017-7895}
+- [md] dm mirror: use all available legs on multiple failures (Mike Snitzer) [1449176 1383444]
+- [fs] nfsd: check for oversized NFSv2/v3 arguments ("J. Bruce Fields") [1447642 1442407] {CVE-2017-7645}
+- [scsi] ses: don't get power status of SES device slot on probe (Gustavo Duarte) [1446650 1434768]
+- [scsi] ipr: do not set DID_PASSTHROUGH on CHECK CONDITION (Steve Best) [1446649 1441747]
+- [net] macsec: dynamically allocate space for sglist (Sabrina Dubroca) [1445546 1445545] {CVE-2017-7477}
+- [net] macsec: avoid heap overflow in skb_to_sgvec (Sabrina Dubroca) [1445546 1445545] {CVE-2017-7477}
+- [fs] gfs2: Allow glocks to be unlocked after withdraw (Robert S Peterson) [1433882 1404005]
+- [net] tcp: avoid infinite loop in tcp_splice_read() (Davide Caratti) [1430579 1430580] {CVE-2017-6214}
+- [mm] vma_merge: correct false positive from __vma_unlink->validate_mm_rb (Andrea Arcangeli) [1428840 1374548]
+- [mm] vma_merge: fix race vm_page_prot race condition against rmap_walk (Andrea Arcangeli) [1428840 1374548]
+- [mm] fix use-after-free if memory allocation failed in vma_adjust() (Andrea Arcangeli) [1428840 1374548]
+- [x86] kvm: x86: fix emulation of "MOV SS, null selector" (Radim Krcmar) [1414742 1414743] {CVE-2017-2583}
+- [powerpc] prom: Increase minimum RMA size to 512MB (Gustavo Duarte) [1450041 1411321]
+- [pci] pciehp: Prioritize data-link event over presence detect (Myron Stowe) [1450124 1435818]
+- [pci] pciehp: Don't re-read Slot Status when queuing hotplug event (Myron Stowe) [1450124 1435818]
+- [pci] pciehp: Process all hotplug events before looking for new ones (Myron Stowe) [1450124 1435818]
+- [pci] pciehp: Rename pcie_isr() locals for clarity (Myron Stowe) [1450124 1435818]
+
+* Sat May 20 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.24.1.el7]
+- [scsi] lpfc: Fix panic on BFS configuration (Maurizio Lombardi) [1452044 1443116]
+- [vfio] type1: Reduce repetitive calls in vfio_pin_pages_remote() (Alex Williamson) [1450855 1438403]
+- [vfio] type1: Remove locked page accounting workqueue (Alex Williamson) [1450855 1438403]
+- [fs] nfs: Allow getattr to also report readdirplus cache hits (Dave Wysochanski) [1450851 1442068]
+- [fs] nfs: Be more targeted about readdirplus use when doing lookup/revalidation (Dave Wysochanski) [1450851 1442068]
+- [fs] nfs: Fix a performance regression in readdir (Dave Wysochanski) [1450851 1442068]
+- [x86] xen: do not re-use pirq number cached in pci device msi msg data (Vitaly Kuznetsov) [1450037 1433831]
+- [powerpc] mm: Add missing global TLB invalidate if cxl is active (Steve Best) [1449178 1440776]
+- [powerpc] boot: Fix zImage TOC alignment (Gustavo Duarte) [1444343 1395838]
+
+* Wed May 10 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.23.1.el7]
+- [scsi] qla2xxx: Defer marking device lost when receiving an RSCN (Himanshu Madhani) [1446246 1436940]
+- [scsi] qla2xxx: Fix typo in driver (Himanshu Madhani) [1446246 1436940]
+- [scsi] qla2xxx: Fix crash in qla2xxx_eh_abort on bad ptr (Himanshu Madhani) [1446246 1436940]
+- [scsi] qla2xxx: Avoid that issuing a LIP triggers a kernel crash (Himanshu Madhani) [1446246 1436940]
+- [scsi] qla2xxx: Add fix to read correct register value for ISP82xx (Himanshu Madhani) [1446246 1436940]
+- [scsi] qla2xxx: Disable the adapter and skip error recovery in case of register disconnect (Himanshu Madhani) [1446246 1436940]
+
+* Thu Apr 27 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.22.1.el7]
+- [mm] hugetlb: don't use reserved during VM_SHARED mapping cow (Larry Woodman) [1445184 1385473]
 
 * Sat Apr 22 2017 Frantisek Hrbata <fhrbata@hrbata.com> [3.10.0-514.21.1.el7]
 - [kernel] sched/core: Fix an SMP ordering race in try_to_wake_up() vs. schedule() (Gustavo Duarte) [1441547 1423400]
