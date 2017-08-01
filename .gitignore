@@ -1,7 +1,4 @@
-SOURCES/kernel-abi-whitelists-514.tar.bz2
-SOURCES/linux-3.10.0-514.26.2.el7.tar.xz
+SOURCES/kernel-abi-whitelists-693.tar.bz2
+SOURCES/linux-3.10.0-693.el7.tar.xz
 SOURCES/rheldup3.x509
 SOURCES/rhelkpatch1.x509
-SOURCES/centos-kpatch.x509
-SOURCES/centos-ldup.x509
-SOURCES/centos.cer
