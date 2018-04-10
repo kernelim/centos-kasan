@@ -9,7 +9,7 @@ RPMVERSION:=3.10.0
 # marker is git tag which we base off of for exporting patches
 MARKER:=v3.10
 PREBUILD:=
-BUILD:=693.21.1
+BUILD:=862
 DIST:=.el7
 SPECFILE:=kernel.spec
 RPM:=$(REDHAT)/rpm
@@ -38,12 +38,15 @@ endif
 $(info BUILDID is "$(BUILDID)". Update '$(shell dirname $(REDHAT))/localversion' to change.)
 
 PKGRELEASE:=$(PREBUILD)$(BUILD)$(DIST)$(BUILDID)
+SPECRELEASE:=$(PREBUILD)$(BUILD)%{?dist}$(BUILDID)
 
 TARFILE:=linux-$(KVERSION)-$(PKGRELEASE).tar.xz
 TARBALL:=$(REDHAT)/$(TARFILE)
 DISTRO_BUILD:=$(shell echo $(BUILD) | sed -e 's|\(^[0-9]\{1,4\}\)\..*|\1|')
 KABI_TARFILE:=kernel-abi-whitelists-$(DISTRO_BUILD).tar.bz2
 KABI_TARBALL:=$(REDHAT)/rpm/SOURCES/$(KABI_TARFILE)
+KABIDW_TARFILE:=kernel-kabi-dw-$(DISTRO_BUILD).tar.bz2
+KABIDW_TARBALL:=$(REDHAT)/rpm/SOURCES/$(KABIDW_TARFILE)
 
 RHELMAJOR:=$(shell git show HEAD:Makefile | grep ^RHEL_MAJOR | sed -e s/RHEL_MAJOR\ =\ //)
 RHELMINOR:=$(shell git show HEAD:Makefile | grep ^RHEL_MINOR | sed -e s/RHEL_MINOR\ =\ //)
