@@ -1,0 +1,245 @@
+Adam Borowski (1):
+      Documentation/features/KASAN: mark KASAN as supported only on 64-bit on x86
+
+Alexander Popov (2):
+      x86/kasan: Fix KASAN shadow region page tables
+      mm/slub.c: add a naive detection of double free or corruption
+
+Alexander Potapenko (17):
+      mm, kasan: SLAB support
+      kasan: modify kmalloc_large_oob_right(), add kmalloc_pagealloc_oob_right()
+      mm, kasan: stackdepot implementation. Enable stackdepot for SLAB
+      kasan: test fix: warn if the UAF could not be detected in kmalloc_uaf2
+      mm, kasan: fix compilation for CONFIG_SLAB
+      mm, kasan: add GFP flags to KASAN API
+      mm: kasan: initial memory quarantine implementation
+      mm, kasan: don't call kasan_krealloc() from ksize().
+      mm, kasan: add a ksize() test
+      mm, kasan: account for object redzone in SLUB's nearest_obj()
+      arch, ftrace: for KASAN put hard/soft IRQ entries into separate sections
+      mm, kasan: switch SLUB to stackdepot, enable memory quarantine for SLUB
+      kasan: avoid overflowing quarantine size on low memory systems
+      x86, kasan, ftrace: Put APIC interrupt handlers into .irqentry.text
+      kasan: remove the unnecessary WARN_ONCE from quarantine.c
+      kasan: add functions for unpoisoning stack variables
+      lib/stackdepot.c: use a non-instrumented version of memcmp()
+
+Andrey Konovalov (19):
+      kasan: update reported bug types for not user nor kernel memory accesses
+      kasan: update reported bug types for kernel memory accesses
+      kasan: accurately determine the type of the bad access
+      kasan: update log messages
+      kasan: various fixes in documentation
+      kasan: move KASAN_SANITIZE in arch/x86/boot/Makefile
+      kasan: update reference to kasan prototype repo
+      kasan: prevent compiler from optimizing away memset in tests
+      kasan: introduce helper functions for determining bug type
+      kasan: unify report headers
+      kasan: change allocation and freeing stack traces headers
+      kasan: simplify address description logic
+      kasan: change report header
+      kasan: improve slab object description
+      kasan: print page description after stacks
+      kasan: improve double-free report format
+      kasan: separate report parts by empty lines
+      kasan: don't emit builtin calls when sanitization is off
+      kasan: fix prototype author email address
+
+Andrey Ryabinin (57):
+      kasan: add kernel address sanitizer infrastructure
+      x86_64: add KASan support
+      kasan: disable memory hotplug
+      fs: dcache: manually unpoison dname after allocation to shut up kasan's reports
+      mm: page_alloc: add kasan hooks on alloc and free paths
+      lib: add kasan test module
+      mm: slub: introduce metadata_access_enable()/metadata_access_disable()
+      mm: slub: introduce virt_to_obj function
+      mm: slub: add kernel address sanitizer support for slub allocator
+      x86_64: kasan: add interceptors for memset/memmove/memcpy functions
+      mm: vmalloc: add flag preventing guard hole allocation
+      mm: vmalloc: pass additional vm_flags to __vmalloc_node_range()
+      kasan: enable stack instrumentation
+      kasan: enable instrumentation of global variables
+      kasan, module, vmalloc: rework shadow allocation for modules
+      kernel: add support for .init_array.* constructors
+      kasan, module: move MODULE_ALIGN macro into <linux/moduleloader.h>
+      mm/mempool.c: kasan: poison mempool elements
+      kasan: Makefile: shut up warnings if CONFIG_COMPILE_TEST=y
+      gcov: fix softlockups
+      kmemleak: disable kasan instrumentation for kmemleak
+      x86/kasan: Flush TLBs after switching CR3
+      x86/kasan: Fix boot crash on AMD processors
+      x86/kasan: Add message about KASAN being initialized
+      x86/kasan: Move KASAN_SHADOW_OFFSET to the arch Kconfig
+      x86/kasan: Define KASAN_SHADOW_OFFSET per architecture
+      x86/kasan, mm: Introduce generic kasan_populate_zero_shadow()
+      x86, efi, kasan: #undef memset/memcpy/memmove per arch
+      x86, efi, kasan: Fix build failure on !KASAN && KMEMCHECK=y kernels
+      x86, kasan: Fix build failure on KASAN=y && KMEMCHECK=y kernels
+      compiler, atomics, kasan: Provide READ_ONCE_NOCHECK()
+      lib/Kconfig.debug: disable -Wframe-larger-than warnings with KASAN=y
+      mm, slub, kasan: enable user tracking by default with KASAN=y
+      kasan: always taint kernel on report
+      kasan: fix kmemleak false-positive in kasan_module_alloc()
+      x86/kasan: Clear kasan_zero_page after TLB flush
+      x86/kasan: Write protect kasan zero shadow
+      MAINTAINERS: fill entries for KASAN
+      mm/kasan: print name of mem[set,cpy,move]() caller in report
+      mm/kasan: add API to check memory regions
+      mm: kasan: remove unused 'reserved' field from struct kasan_alloc_meta
+      x86/kasan: instrument user memory access API
+      kasan/tests: add tests for user memory access functions
+      mm: slub: remove unused virt_to_obj()
+      mm: mempool: kasan: don't poot mempool objects in quarantine
+      mm/kasan: fix corruptions and false positive reports
+      mm/kasan: don't reduce quarantine in atomic contexts
+      mm/kasan, slub: don't disable interrupts when object leaves quarantine
+      mm/kasan: get rid of ->alloc_size in struct kasan_alloc_meta
+      mm/kasan: get rid of ->state in struct kasan_alloc_meta
+      kasan: improve double-free reports
+      kasan: turn on -fsanitize-address-use-after-scope
+      x86/kasan: Fix boot with KASAN=y and PROFILE_ANNOTATED_BRANCHES=y
+      mm/kasan: get rid of speculative shadow checks
+      x86/kasan: don't allocate extra shadow memory
+      mm/kasan: add support for memory hotplug
+      mm/kasan: don't vfree() nonexistent vm_area
+
+Aneesh Kumar K.V (4):
+      mm/kasan: rename kasan_enabled() to kasan_report_enabled()
+      mm/kasan: MODULE_VADDR is not available on all archs
+      mm/kasan: don't use kasan shadow pointer in generic functions
+      mm/kasan: prevent deadlock in kasan reporting
+
+Arnd Bergmann (2):
+      kasan: avoid -Wmaybe-uninitialized warning
+      kasan: rework Kconfig settings
+
+Chris Wilson (1):
+      lib/stackdepot: export save/fetch stack for drivers
+
+Christoph Lameter (1):
+      slab common: add functions for kmem_cache_node access
+
+Colin Ian King (2):
+      kasan: make get_wild_bug_type() static
+      kasan: remove redundant initialization of variable 'real_size'
+
+Dan Aloni (4):
+      Fix for CONFIG_RETPOLINE=n
+      Import newer objtool from Linux v4.17, for allowing gcc 7.x or 8.x builds
+      compiler-gcc.h: KASAN changes
+      mm: slub: export object_err
+
+David Hildenbrand (2):
+      kasan: free allocated shadow memory on MEM_CANCEL_ONLINE
+      kasan: fix memory hotplug during boot
+
+Dmitry Vyukov (16):
+      x86: Fix KASAN false positives in thread_saved_pc()
+      mm: prevent KASAN false positives in kmemleak
+      kasan: add newline to messages
+      kprobes: Avoid false KASAN reports during stack copy
+      kprobes: Unpoison stack in jprobe_return() for KASAN
+      lib/stackdepot.c: bump stackdepot capacity from 16MB to 128MB
+      kasan: support use-after-scope detection
+      kasan: support panic_on_warn
+      kasan: eliminate long stalls during quarantine reduction
+      kasan: fix races in quarantine_remove_cache()
+      kasan: Allow kasan_check_read/write() to accept pointers to volatiles
+      kasan: detect invalid frees for large objects
+      kasan: don't use __builtin_return_address(1)
+      kasan: detect invalid frees for large mempool objects
+      kasan: unify code between kasan_slab_free() and kasan_poison_kfree()
+      kasan: detect invalid frees
+
+Geert Uytterhoeven (1):
+      slub: drop bogus inline for fixup_red_left()
+
+Greg Thelen (1):
+      kasan: drain quarantine of memcg slab objects
+
+Ingo Molnar (4):
+      Documentation/features/debug: Add feature description and arch support status file for 'KASAN'
+      Documentation/features: Explain kernel feature descriptions and add visualization script
+      kasan, sched/headers: Uninline kasan_enable/disable_current()
+      kasan, sched/headers: Remove <linux/sched.h> from <linux/kasan.h>
+
+James Morse (1):
+      PM / Hibernate: Don't let kasan instrument snapshot.c
+
+Jerome Marchand (1):
+      mm: vmalloc: don't remove inexistent guard hole in remove_vm_area()
+
+Joe Perches (2):
+      kasan: show gcc version requirements in Kconfig and Documentation
+      mm: coalesce split strings
+
+Joonsoo Kim (2):
+      kasan/quarantine: fix bugs on qlist_move_cache()
+      mm/kasan/kasan.c: rename XXX_is_zero to XXX_is_nonzero
+
+Josh Poimboeuf (4):
+      x86/unwind: Prevent KASAN false positive warnings in guess unwinder
+      x86/dumpstack: Prevent KASAN false positive warnings
+      x86/unwind: Fix guess-unwinder regression
+      x86/suspend: fix false positive KASAN warning on suspend/resume
+
+Kirill A. Shutemov (1):
+      x86: expose number of page table levels on Kconfig level
+
+Laura Abbott (1):
+      mm, kasan: Update kasan docs to indicate arm64 support
+
+Linus Torvalds (1):
+      Allow KASAN and HOTPLUG_MEMORY to co-exist when doing build testing
+
+Mark Rutland (2):
+      kasan: add functions to clear stack poison
+      kasan: report only the first error by default
+
+Masami Hiramatsu (1):
+      kasan: add a prototype of task_struct to avoid warning
+
+Mike Galbraith (1):
+      kasan: do not sanitize kexec purgatory
+
+Mikulas Patocka (1):
+      slab: fix for_each_kmem_cache_node()
+
+Paul Lawrence (2):
+      kasan: support alloca() poisoning
+      kasan: add tests for alloca poisoning
+
+Peter Zijlstra (1):
+      kasan: respect /proc/sys/kernel/traceoff_on_warning
+
+Phil Sutter (1):
+      lib: test_rhashtable: Fix KASAN warning
+
+Shakeel Butt (1):
+      slab, slub: skip unnecessary kasan_cache_shutdown()
+
+Shuah Khan (1):
+      kasan: change memory hot-add error messages to info messages
+
+Thomas Garnier (1):
+      x86/mm: Adapt MODULES_END based on fixmap section size
+
+Wang Long (6):
+      kasan: remove duplicate definition of the macro KASAN_FREE_PAGE
+      lib/test_kasan.c: fix a typo
+      lib/test_kasan.c: make kmalloc_oob_krealloc_less more correctly
+      lib: test_kasan: add some testcases
+      Documentation: kasan: fix a typo
+      kasan: Fix a type conversion error
+
+Wanpeng Li (1):
+      mm/vmalloc: use wrapper function get_vm_area_size to caculate size of vm area
+
+Xishi Qiu (2):
+      kasan: fix last shadow judgement in memory_is_poisoned_16()
+      kasan: use IS_ALIGNED in memory_is_poisoned_8()
+
+zhong jiang (1):
+      mm: disable CONFIG_MEMORY_HOTPLUG when KASAN is enabled
+
