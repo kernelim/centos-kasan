@@ -5,4 +5,5 @@ f7427cc7e124ab6cb6646d29667a4edc29ba1056 SOURCES/linux-3.10.0-957.el7.tar.xz
 d90885108d225a234a5a9d054fc80893a5bd54d0 SOURCES/rhelkpatch1.x509
 5a7d05a8298cf38d43689470e8e43230d8add0f9 SOURCES/centos-kpatch.x509
 c61172887746663d3bdd9acaa263cbfacf99e8b3 SOURCES/centos-ldup.x509
-6e9105eb51e55a46761838f289a917611cad8091 SOURCES/centos.cer
+993945f80d36cc3d0686172cf1ea266cc0f10d42 SOURCES/centos-ca-secureboot.der
+faacf7cfff0bf8fec6b821e8c49f1dee39fae878 SOURCES/centossecureboot001.crt
